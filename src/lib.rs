@@ -26,8 +26,8 @@ pub fn app() -> App {
         .add_plugins(DefaultPlugins)
         .add_state(GameState::Menu);
 
-    menu::initialize(&mut app);
-    coop::initialize(&mut app);
+    menu::build(&mut app);
+    coop::build(&mut app);
 
     app
 }

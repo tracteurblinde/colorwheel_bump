@@ -1,3 +1,4 @@
+use bevy::prelude::Color;
 pub const MAP_SIZE: u32 = 41;
 pub const GRID_WIDTH: f32 = 0.05;
 
@@ -12,8 +13,8 @@ pub struct GameConfig {
     pub build_version: semver::Version,
 }
 
-impl GameConfig {
-    pub fn default() -> Self {
+impl Default for GameConfig {
+    fn default() -> Self {
         GameConfig::new(
             "PrismPals",
             "prismpals",
@@ -21,7 +22,9 @@ impl GameConfig {
             "wss://matchbox.tracteur.dev:2083",
         )
     }
+}
 
+impl GameConfig {
     pub fn new(
         game_title: &'static str,
         game_slug: &'static str,
@@ -56,3 +59,7 @@ pub enum GameState {
     Gym,
     Coop,
 }
+
+pub const BUTTON_COLOR: Color = Color::rgb(0.27, 0.27, 0.27);
+pub const BUTTON_HOVER_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
+pub const BUTTON_PRESSED_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);

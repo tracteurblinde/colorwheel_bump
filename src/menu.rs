@@ -1,10 +1,10 @@
-use crate::config::GameState;
 use bevy::prelude::*;
+use crate::{config::{GameState, BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_PRESSED_COLOR}};
 
-pub fn initialize(app: &mut App) {
+pub fn build(app: &mut App) {
     app.add_system_set(SystemSet::on_enter(GameState::Menu).with_system(startup));
-    app.add_system_set(SystemSet::on_update(GameState::Menu).with_system(update));
     app.add_system_set(SystemSet::on_exit(GameState::Menu).with_system(shutdown));
+    app.add_system_set(SystemSet::on_update(GameState::Menu).with_system(update));
 }
 
 // Marker components for UI elements
@@ -18,7 +18,6 @@ struct GymButton;
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(Camera3dBundle::default());
 
-    // All this is just for spawning centered text.
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -26,6 +25,7 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 position_type: PositionType::Absolute,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::FlexEnd,
+                flex_direction: FlexDirection::ColumnReverse,
                 ..default()
             },
             color: Color::rgb(0.1, 0.1, 0.1).into(),
@@ -37,6 +37,7 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     style: Style {
                         align_self: AlignSelf::Center,
                         justify_content: JustifyContent::Center,
+                        margin: UiRect::all(Val::Auto),
                         ..default()
                     },
                     text: Text::from_section(
@@ -53,15 +54,12 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 parent.spawn_bundle(ButtonBundle {
                     style: Style {
                         size: Size::new(Val::Px(150.0), Val::Px(65.0)),
-                        // center button
                         margin: UiRect::all(Val::Auto),
-                        // horizontally center child text
                         justify_content: JustifyContent::Center,
-                        // vertically center child text
                         align_items: AlignItems::Center,
                         ..default()
                     },
-                    color: Color::rgb(0.35, 0.75, 0.35).into(),
+                    color: BUTTON_COLOR.into(),
                     ..default()
                 })
                 .insert(GymButton)
@@ -89,22 +87,29 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(MenuUI);
 }
 
+fn shutdown(query: Query<Entity, With<MenuUI>>, mut commands: Commands) {
+    for e in &query {
+        commands.entity(e).despawn_recursive();
+    }
+}
+
 fn update(
     mut game_state: ResMut<State<GameState>>,
-    gym_button_query : Query<(&Interaction, &Children), (Changed<Interaction>, With<GymButton>)>,
+    mut gym_button_query : Query<(&Interaction, &mut UiColor, &Children), Changed<Interaction>>,
 ) {
-    for (interaction, _) in &mut gym_button_query.iter() {
+    for (interaction, mut color, _) in &mut gym_button_query {
         match *interaction {
             Interaction::Clicked => {
                 game_state.set(GameState::Gym).unwrap();
+                *color = BUTTON_PRESSED_COLOR.into();
             },
-            _ => {}
+            Interaction::Hovered => {
+                *color = BUTTON_HOVER_COLOR.into();
+            },
+            Interaction::None => {
+                *color = BUTTON_COLOR.into();
+            },
         }
     }
 }
 
-fn shutdown(query: Query<Entity, With<MenuUI>>, mut commands: Commands) {
-    for e in query.iter() {
-        commands.entity(e).despawn_recursive();
-    }
-}

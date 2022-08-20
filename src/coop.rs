@@ -9,7 +9,7 @@ use crate::{
     GameConfig, GameState, LocalPlayerHandle, Player,
 };
 
-pub fn initialize(app: &mut App) {
+pub fn build(app: &mut App) {
     GGRSPlugin::<GgrsConfig>::new()
         .with_input_system(input)
         .with_rollback_schedule(
@@ -211,14 +211,14 @@ fn camera_follow(
         None => return, // Session hasn't started yet
     };
 
-    for (player_transform, player) in player_query.iter() {
+    for (player_transform, player) in &player_query {
         if player.handle != player_handle {
             continue;
         }
 
         let pos = player_transform.translation;
 
-        for mut transform in camera_query.iter_mut() {
+        for mut transform in &mut camera_query {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
         }
@@ -229,7 +229,7 @@ fn move_players(
     inputs: Res<Vec<(u8, ggrs::InputStatus)>>,
     mut player_query: Query<(&mut Transform, &Player)>,
 ) {
-    for (mut transform, player) in player_query.iter_mut() {
+    for (mut transform, player) in &mut player_query {
         let (input, _) = inputs[player.handle];
         let direction = direction(input);
 
