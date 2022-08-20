@@ -9,7 +9,7 @@ use crate::{
     GameConfig, GameState, LocalPlayerHandle, Player,
 };
 
-pub fn initialize_coop_state(app: &mut App) {
+pub fn initialize(app: &mut App) {
     GGRSPlugin::<GgrsConfig>::new()
         .with_input_system(input)
         .with_rollback_schedule(

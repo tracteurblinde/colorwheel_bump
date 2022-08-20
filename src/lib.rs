@@ -7,6 +7,7 @@ pub mod config;
 mod component;
 mod coop;
 mod input;
+mod menu;
 
 struct LocalPlayerHandle(usize);
 
@@ -15,7 +16,7 @@ pub fn app() -> App {
     let mut app = App::new();
 
     app.insert_resource(game_config.clone())
-        .insert_resource(ClearColor(Color::rgb(0.33, 0.33, 0.33)))
+        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .insert_resource(WindowDescriptor {
             title: game_config.game_title.to_string(),
             canvas: Some("#bevy".to_string()),
@@ -25,7 +26,8 @@ pub fn app() -> App {
         .add_plugins(DefaultPlugins)
         .add_state(GameState::Menu);
 
-    coop::initialize_coop_state(&mut app);
+    menu::initialize(&mut app);
+    coop::initialize(&mut app);
 
     app
 }
