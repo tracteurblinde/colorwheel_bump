@@ -30,7 +30,7 @@ fn set_global_css() {
 
 #[styled_component(Root)]
 fn view() -> Html {
-    set_window_title(prismpals::LAUNCHER_TITLE);
+    set_window_title(prismpals::config::GameConfig::default().game_title);
     set_global_css();
 
     let css = css!(
