@@ -67,9 +67,9 @@ fn setup_board(mut commands: Commands) {
             sprite: Sprite {
                 color: Color::rgb(0.27, 0.27, 0.27),
                 custom_size: Some(Vec2::new(MAP_SIZE as f32, GRID_WIDTH)),
-                ..Default::default()
+                ..default()
             },
-            ..Default::default()
+            ..default()
         });
     }
 
@@ -84,9 +84,9 @@ fn setup_board(mut commands: Commands) {
             sprite: Sprite {
                 color: Color::rgb(0.27, 0.27, 0.27),
                 custom_size: Some(Vec2::new(GRID_WIDTH, MAP_SIZE as f32)),
-                ..Default::default()
+                ..default()
             },
-            ..Default::default()
+            ..default()
         });
     }
 }
@@ -133,9 +133,9 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
             sprite: Sprite {
                 color: Color::rgb(0., 0.47, 1.),
                 custom_size: Some(Vec2::new(1., 1.)),
-                ..Default::default()
+                ..default()
             },
-            ..Default::default()
+            ..default()
         })
         .insert(Player { handle: 0 })
         .insert(Rollback::new(rip.next_id()));
@@ -147,9 +147,9 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
             sprite: Sprite {
                 color: Color::rgb(0., 0.4, 0.),
                 custom_size: Some(Vec2::new(1., 1.)),
-                ..Default::default()
+                ..default()
             },
-            ..Default::default()
+            ..default()
         })
         .insert(Player { handle: 1 })
         .insert(Rollback::new(rip.next_id()));

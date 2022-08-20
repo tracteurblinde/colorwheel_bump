@@ -20,7 +20,7 @@ pub fn app() -> App {
             title: game_config.game_title.to_string(),
             canvas: Some("#bevy".to_string()),
             fit_canvas_to_parent: true,
-            ..Default::default()
+            ..default()
         })
         .add_plugins(DefaultPlugins)
         .add_state(GameState::Menu);
