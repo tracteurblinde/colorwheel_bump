@@ -1,61 +1,29 @@
-use bevy::{math::Vec3Swizzles, prelude::*, render::camera::ScalingMode, tasks::IoTaskPool};
+use bevy::{prelude::*, tasks::IoTaskPool};
 use bevy_ggrs::*;
-use ggrs::{Config, PlayerType};
+use ggrs::PlayerType;
 use matchbox_socket::WebRtcSocket;
 
 use crate::{
     config::{GRID_WIDTH, MAP_SIZE},
-    input::*,
-    GameConfig, GameState, LocalPlayerHandle, Player,
+    core::player::{LocalPlayerHandle, Player, PlayerBundle},
+    AppState, GameConfig, GameState,
 };
 
 pub fn build(app: &mut App) {
-    GGRSPlugin::<GgrsConfig>::new()
-        .with_input_system(input)
-        .with_rollback_schedule(
-            Schedule::default().with_stage(
-                "ROLLBACK_STAGE",
-                SystemStage::single_threaded().with_system_set(
-                    SystemSet::on_update(GameState::Coop).with_system(move_players),
-                ),
-            ),
-        )
-        .register_rollback_type::<Transform>()
-        .build(app);
-
     app.add_system_set(
-        SystemSet::on_enter(GameState::Coop)
+        SystemSet::on_enter(AppState::Game(GameState::Coop))
             .with_system(setup_board)
             .with_system(start_matchbox_socket)
             .with_system(spawn_players),
     )
     .add_system_set(
-        SystemSet::on_update(GameState::Coop)
+        SystemSet::on_update(AppState::Game(GameState::Coop))
             .with_system(wait_for_players)
             .with_system(camera_follow),
     );
 }
 
-#[derive(Debug)]
-struct GgrsConfig;
-impl Config for GgrsConfig {
-    // 4-directions + fire fits easily in a single byte
-    type Input = u8;
-    type State = u8;
-    // Matchbox' WebRtcSocket addresses are strings
-    type Address = String;
-}
-
 fn setup_board(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle {
-        projection: OrthographicProjection {
-            scale: 1.,
-            scaling_mode: ScalingMode::FixedVertical(24.0),
-            ..default()
-        },
-        ..default()
-    });
-
     // Horizontal lines
     for i in 0..=MAP_SIZE {
         commands.spawn_bundle(SpriteBundle {
@@ -127,32 +95,20 @@ fn start_matchbox_socket(mut commands: Commands, game_config: Res<GameConfig>) {
 
 fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     // Player 1
-    commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(-2., 0., 100.)),
-            sprite: Sprite {
-                color: Color::rgb(0., 0.47, 1.),
-                custom_size: Some(Vec2::new(1., 1.)),
-                ..default()
-            },
-            ..default()
-        })
-        .insert(Player { handle: 0 })
-        .insert(Rollback::new(rip.next_id()));
+    commands.spawn_bundle(PlayerBundle::new(
+        0,
+        Color::rgb(0., 0.47, 1.),
+        Vec3::new(-2., 0., 100.),
+        rip.next_id(),
+    ));
 
     // Player 2
-    commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(2., 0., 100.)),
-            sprite: Sprite {
-                color: Color::rgb(0., 0.4, 0.),
-                custom_size: Some(Vec2::new(1., 1.)),
-                ..default()
-            },
-            ..default()
-        })
-        .insert(Player { handle: 1 })
-        .insert(Rollback::new(rip.next_id()));
+    commands.spawn_bundle(PlayerBundle::new(
+        0,
+        Color::rgb(0., 0.4, 0.),
+        Vec3::new(-2., 0., 100.),
+        rip.next_id(),
+    ));
 }
 
 fn wait_for_players(mut commands: Commands, mut socket: ResMut<Option<WebRtcSocket>>) {
@@ -175,7 +131,7 @@ fn wait_for_players(mut commands: Commands, mut socket: ResMut<Option<WebRtcSock
     info!("All peers have joined, going in-game");
 
     // create a GGRS P2P session
-    let mut session_builder = ggrs::SessionBuilder::<GgrsConfig>::new()
+    let mut session_builder = ggrs::SessionBuilder::<crate::core::GgrsConfig>::new()
         .with_num_players(num_players)
         .with_input_delay(2);
 
@@ -222,29 +178,5 @@ fn camera_follow(
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
         }
-    }
-}
-
-fn move_players(
-    inputs: Res<Vec<(u8, ggrs::InputStatus)>>,
-    mut player_query: Query<(&mut Transform, &Player)>,
-) {
-    for (mut transform, player) in &mut player_query {
-        let (input, _) = inputs[player.handle];
-        let direction = direction(input);
-
-        if direction == Vec2::ZERO {
-            continue;
-        }
-
-        let move_speed = 0.13;
-        let move_delta = direction * move_speed;
-
-        let old_pos = transform.translation.xy();
-        let limit = Vec2::splat(MAP_SIZE as f32 / 2. - 0.5);
-        let new_pos = (old_pos + move_delta).clamp(-limit, limit);
-
-        transform.translation.x = new_pos.x;
-        transform.translation.y = new_pos.y;
     }
 }

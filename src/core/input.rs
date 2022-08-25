@@ -11,7 +11,7 @@ const INPUT_LEFT: u8 = 1 << 2;
 const INPUT_RIGHT: u8 = 1 << 3;
 const INPUT_FIRE: u8 = 1 << 4;
 
-pub fn input(_: In<ggrs::PlayerHandle>, keys: Res<Input<KeyCode>>) -> u8 {
+pub fn input(keys: Res<Input<KeyCode>>) -> u8 {
     let mut input = 0u8;
 
     if keys.any_pressed([KeyCode::Up, KeyCode::W]) {
@@ -31,6 +31,10 @@ pub fn input(_: In<ggrs::PlayerHandle>, keys: Res<Input<KeyCode>>) -> u8 {
     }
 
     input
+}
+
+pub fn input_mp(_: In<ggrs::PlayerHandle>, keys: Res<Input<KeyCode>>) -> u8 {
+    input(keys)
 }
 
 pub fn direction(input: u8) -> Vec2 {

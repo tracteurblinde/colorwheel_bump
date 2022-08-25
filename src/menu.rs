@@ -1,10 +1,10 @@
+use crate::config::{AppState, GameState, MenuState, BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_PRESSED_COLOR};
 use bevy::prelude::*;
-use crate::{config::{GameState, BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_PRESSED_COLOR}};
 
 pub fn build(app: &mut App) {
-    app.add_system_set(SystemSet::on_enter(GameState::Menu).with_system(startup));
-    app.add_system_set(SystemSet::on_exit(GameState::Menu).with_system(shutdown));
-    app.add_system_set(SystemSet::on_update(GameState::Menu).with_system(update));
+    app.add_system_set(SystemSet::on_enter(AppState::Menu(MenuState::Main)).with_system(startup));
+    app.add_system_set(SystemSet::on_exit(AppState::Menu(MenuState::Main)).with_system(shutdown));
+    app.add_system_set(SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(update));
 }
 
 // Marker components for UI elements
@@ -16,8 +16,6 @@ struct TitleText;
 struct GymButton;
 
 fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera3dBundle::default());
-
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -51,7 +49,8 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 })
                 .insert(TitleText);
-                parent.spawn_bundle(ButtonBundle {
+            parent
+                .spawn_bundle(ButtonBundle {
                     style: Style {
                         size: Size::new(Val::Px(150.0), Val::Px(65.0)),
                         margin: UiRect::all(Val::Auto),
@@ -94,22 +93,21 @@ fn shutdown(query: Query<Entity, With<MenuUI>>, mut commands: Commands) {
 }
 
 fn update(
-    mut game_state: ResMut<State<GameState>>,
-    mut gym_button_query : Query<(&Interaction, &mut UiColor, &Children), Changed<Interaction>>,
+    mut game_state: ResMut<State<AppState>>,
+    mut gym_button_query: Query<(&Interaction, &mut UiColor, &Children), Changed<Interaction>>,
 ) {
     for (interaction, mut color, _) in &mut gym_button_query {
         match *interaction {
             Interaction::Clicked => {
-                game_state.set(GameState::Gym).unwrap();
+                game_state.set(AppState::Game(GameState::Gym)).unwrap();
                 *color = BUTTON_PRESSED_COLOR.into();
-            },
+            }
             Interaction::Hovered => {
                 *color = BUTTON_HOVER_COLOR.into();
-            },
+            }
             Interaction::None => {
                 *color = BUTTON_COLOR.into();
-            },
+            }
         }
     }
 }
-

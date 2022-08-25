@@ -1,15 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::ScalingMode};
 
-use component::*;
 use config::*;
 pub mod config;
 
-mod component;
-mod coop;
-mod input;
+mod core;
 mod menu;
-
-struct LocalPlayerHandle(usize);
+mod modes;
 
 pub fn app() -> App {
     let game_config = GameConfig::default();
@@ -24,10 +20,23 @@ pub fn app() -> App {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        .add_state(GameState::Menu);
+        .add_startup_system(spawn_camera)
+        .add_state(AppState::Game(GameState::Gym));
 
+    core::build(&mut app);
     menu::build(&mut app);
-    coop::build(&mut app);
+    modes::build(&mut app);
 
     app
+}
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn_bundle(Camera2dBundle {
+        projection: OrthographicProjection {
+            scale: 1.,
+            scaling_mode: ScalingMode::FixedVertical(24.0),
+            ..default()
+        },
+        ..default()
+    });
 }
