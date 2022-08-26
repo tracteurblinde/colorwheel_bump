@@ -20,7 +20,7 @@ ggrs = "0.9"
 image = "0.24.3"
 matchbox_socket = { version = "0.3", features = ["ggrs-socket"] }
 semver = "1.0"
-winit = "0.26.1"
+winit = "0.26"
 
 [build-dependencies]
 anyhow = "1.0"
