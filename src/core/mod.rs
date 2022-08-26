@@ -10,6 +10,7 @@ use crate::{
 
 pub mod component;
 pub mod input;
+pub mod platform;
 pub mod player;
 
 pub fn build(app: &mut App) {

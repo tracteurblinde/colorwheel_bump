@@ -1,55 +1,43 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-pub struct LocalPlayerHandle(pub usize);
-
 #[derive(Component)]
-pub struct Player {
-    pub handle: usize,
-}
+pub struct Platform {}
 
 #[derive(Bundle)]
-pub struct PlayerBundle {
-    pub player: Player,
-    pub rollback: bevy_ggrs::Rollback,
+pub struct PlatformBundle {
     #[bundle]
     pub sprite_bundle: SpriteBundle,
-    pub rigid_body: RigidBody,
+    pub platform: Platform,
     pub collider: Collider,
-    pub restitution: Restitution,
+    pub rigid_body: RigidBody,
+
 }
 
-impl PlayerBundle {
-    pub fn new(
-        handle: usize,
-        color: Color,
-        position: Vec3,
-        rollback_id: u32,
-    ) -> Self {
+impl PlatformBundle {
+    pub fn new(color: Color, position: Vec3, size: Vec2) -> Self {
         Self {
-            player: Player { handle },
-            rollback: bevy_ggrs::Rollback::new(rollback_id),
             sprite_bundle: SpriteBundle {
                 transform: Transform::from_translation(position),
                 sprite: Sprite {
                     color,
-                    custom_size: Some(Vec2::new(1., 1.)),
+                    custom_size: Some(size),
                     ..default()
                 },
                 ..default()
             },
+            collider: Collider::cuboid(size.x / 2., size.y / 2.),
             ..default()
         }
     }
 }
 
-impl Default for PlayerBundle {
+impl Default for PlatformBundle {
     fn default() -> Self {
         Self {
-            player: Player { handle: 0 },
-            rollback: bevy_ggrs::Rollback::new(0),
+            platform: Platform {},
             sprite_bundle: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
+                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
                 sprite: Sprite {
                     color: Color::rgb(0.7, 0.0, 0.7),
                     custom_size: Some(Vec2::new(1., 1.)),
@@ -57,9 +45,8 @@ impl Default for PlayerBundle {
                 },
                 ..default()
             },
-            rigid_body: RigidBody::Dynamic,
             collider: Collider::cuboid(0.5, 0.5),
-            restitution: Restitution::coefficient(0.7),
+            rigid_body: RigidBody::Fixed,
         }
     }
 }

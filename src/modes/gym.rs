@@ -1,14 +1,20 @@
 use crate::{
     config::{self, AppState, GameState},
-    core::{player::{PlayerBundle, Player}, input},
+    core::{
+        input,
+        player::{Player, PlayerBundle},
+        platform::PlatformBundle,
+    },
 };
-use bevy::{prelude::*, math::Vec3Swizzles};
+use bevy::{math::Vec3Swizzles, prelude::*};
 
 pub fn build(app: &mut App) {
     app.add_system_set(SystemSet::on_enter(AppState::Game(GameState::Gym)).with_system(startup));
     // app.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Gym)).with_system(shutdown));
     app.add_system_set(
-        SystemSet::on_update(AppState::Game(GameState::Gym)).with_system(move_player),
+        SystemSet::on_update(AppState::Game(GameState::Gym))
+            .with_system(move_player)
+            .with_system(camera_follow),
     );
 }
 
@@ -51,8 +57,15 @@ fn startup(mut commands: Commands) {
     commands.spawn_bundle(PlayerBundle::new(
         0,
         Color::rgb(0.4, 0.0, 0.6),
-        Vec3::new(0., 0., 100.),
+        Vec3::new(-0.5, 0.5, 100.),
         0,
+    ));
+
+    // Spawn a platform
+    commands.spawn_bundle(PlatformBundle::new(
+        Color::rgb(0.6, 0.6, 0.2),
+        Vec3::new(0., -1.5, 50.),
+        Vec2::new(16., 1.),
     ));
 }
 
@@ -65,8 +78,8 @@ fn move_player(keys: Res<Input<KeyCode>>, mut player_query: Query<(&mut Transfor
             continue;
         }
 
-        let move_speed = 0.13;
-        let move_delta = direction * move_speed;
+        let move_speed = 0.07;
+        let move_delta = direction.normalize_or_zero() * move_speed;
 
         let old_pos = transform.translation.xy();
         let limit = Vec2::splat(crate::config::MAP_SIZE as f32 / 2. - 0.5);
@@ -74,5 +87,23 @@ fn move_player(keys: Res<Input<KeyCode>>, mut player_query: Query<(&mut Transfor
 
         transform.translation.x = new_pos.x;
         transform.translation.y = new_pos.y;
+    }
+}
+
+fn camera_follow(
+    player_query: Query<(&Transform, &Player)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+) {
+    for (player_transform, player) in &player_query {
+        if player.handle != 0 {
+            continue;
+        }
+
+        let pos = player_transform.translation;
+
+        for mut transform in &mut camera_query {
+            transform.translation.x = pos.x;
+            transform.translation.y = pos.y;
+        }
     }
 }
