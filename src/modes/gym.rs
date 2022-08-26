@@ -2,11 +2,12 @@ use crate::{
     config::{self, AppState, GameState},
     core::{
         input,
-        player::{Player, PlayerBundle},
         platform::PlatformBundle,
+        player::{Player, PlayerBundle},
     },
 };
 use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy_rapier2d::prelude::*;
 
 pub fn build(app: &mut App) {
     app.add_system_set(SystemSet::on_enter(AppState::Game(GameState::Gym)).with_system(startup));
@@ -71,22 +72,27 @@ fn startup(mut commands: Commands) {
 
 // fn shutdown(mut commands: Commands) {}
 
-fn move_player(keys: Res<Input<KeyCode>>, mut player_query: Query<(&mut Transform, &Player)>) {
-    let direction = input::direction(input::input(keys));
-    for (mut transform, _) in &mut player_query {
-        if direction == Vec2::ZERO {
-            continue;
+fn move_player(
+    keys: Res<Input<KeyCode>>,
+    mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalForce, &Player)>,
+) {
+    let move_speed = 0.015;
+    let move_delta = input::direction(input::input(keys)).normalize_or_zero() * move_speed;
+
+    for (mut transform, mut velocity, mut external_force, _) in &mut player_query {
+        external_force.force = move_delta;
+
+        let cur_pos = transform.translation.xy();
+        // If the player is outside the map, move them back to 0,0, clear forces/velocities
+        if cur_pos.x.abs() > config::MAP_SIZE as f32 / 2.
+            || cur_pos.y.abs() > config::MAP_SIZE as f32 / 2.
+        {
+            transform.translation = Vec3::new(0., 0., 100.);
+            external_force.force = Vec2::ZERO;
+            external_force.torque = 0.;
+            velocity.linvel = Vec2::ZERO;
+            velocity.angvel = 0.;
         }
-
-        let move_speed = 0.07;
-        let move_delta = direction.normalize_or_zero() * move_speed;
-
-        let old_pos = transform.translation.xy();
-        let limit = Vec2::splat(crate::config::MAP_SIZE as f32 / 2. - 0.5);
-        let new_pos = (old_pos + move_delta).clamp(-limit, limit);
-
-        transform.translation.x = new_pos.x;
-        transform.translation.y = new_pos.y;
     }
 }
 

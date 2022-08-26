@@ -15,17 +15,14 @@ pub struct PlayerBundle {
     #[bundle]
     pub sprite_bundle: SpriteBundle,
     pub rigid_body: RigidBody,
+    pub velocity: Velocity,
     pub collider: Collider,
     pub restitution: Restitution,
+    pub external_force: ExternalForce,
 }
 
 impl PlayerBundle {
-    pub fn new(
-        handle: usize,
-        color: Color,
-        position: Vec3,
-        rollback_id: u32,
-    ) -> Self {
+    pub fn new(handle: usize, color: Color, position: Vec3, rollback_id: u32) -> Self {
         Self {
             player: Player { handle },
             rollback: bevy_ggrs::Rollback::new(rollback_id),
@@ -58,8 +55,10 @@ impl Default for PlayerBundle {
                 ..default()
             },
             rigid_body: RigidBody::Dynamic,
+            velocity: Velocity::default(),
             collider: Collider::cuboid(0.5, 0.5),
             restitution: Restitution::coefficient(0.7),
+            external_force: ExternalForce::default(),
         }
     }
 }
