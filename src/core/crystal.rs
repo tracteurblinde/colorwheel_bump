@@ -1,5 +1,8 @@
 use bevy::prelude::*;
+use bevy_prototype_lyon::{entity::ShapeBundle, prelude::*};
 use bevy_rapier2d::prelude::*;
+
+use crate::config;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CrystalColor {
@@ -47,6 +50,13 @@ impl CrystalColor {
             CrystalColor::RedOrange => Color::rgb(1.0, 0.5, 0.0),
             CrystalColor::YellowOrange => Color::rgb(1.0, 1.0, 0.5),
             CrystalColor::YellowGreen => Color::rgb(1.0, 1.0, 0.0),
+        }
+    }
+
+    pub fn to_draw_mode(&self) -> DrawMode {
+        DrawMode::Outlined {
+            fill_mode: bevy_prototype_lyon::prelude::FillMode::color(self.to_color()),
+            outline_mode: StrokeMode::new(Color::WHITE, config::GRID_WIDTH),
         }
     }
 
@@ -101,10 +111,13 @@ pub struct Crystal {
 #[derive(Bundle)]
 pub struct CrystalBundle {
     #[bundle]
-    pub sprite_bundle: SpriteBundle,
+    pub shape_bundle: ShapeBundle,
     pub crystal: Crystal,
-    pub collider: Collider,
     pub rigid_body: RigidBody,
+    pub velocity: Velocity,
+    pub collider: Collider,
+    pub gravity: GravityScale,
+    pub locked_axes: LockedAxes,
 }
 
 impl CrystalBundle {
@@ -113,19 +126,12 @@ impl CrystalBundle {
         Self::default().with_color(crystal_color)
     }
     pub fn with_color(mut self, crystal_color: CrystalColor) -> Self {
-        self.crystal.crystal_color = crystal_color;
-        self.sprite_bundle.sprite.color = crystal_color.to_color();
+        self.shape_bundle.mode = crystal_color.to_draw_mode();
         self
     }
 
     pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.sprite_bundle.transform = Transform::from_translation(Vec3::new(x, y, 75.));
-        self
-    }
-
-    pub fn with_size(mut self, size: Vec2) -> Self {
-        self.sprite_bundle.sprite.custom_size = Some(size);
-        self.collider = Collider::cuboid(size.x / 2., size.y / 2.);
+        self.shape_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
         self
     }
 }
@@ -133,21 +139,25 @@ impl CrystalBundle {
 impl Default for CrystalBundle {
     fn default() -> Self {
         let color = CrystalColor::Blue;
+        let shape = shapes::RegularPolygon {
+            sides: 6,
+            feature: shapes::RegularPolygonFeature::Radius(1.),
+            ..shapes::RegularPolygon::default()
+        };
         Self {
             crystal: Crystal {
                 crystal_color: color,
             },
-            sprite_bundle: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
-                sprite: Sprite {
-                    color: color.to_color(),
-                    custom_size: Some(Vec2::new(1., 1.)),
-                    ..default()
-                },
-                ..default()
-            },
-            collider: Collider::cuboid(0.5, 0.5),
-            rigid_body: RigidBody::Fixed,
+            shape_bundle: GeometryBuilder::build_as(
+                &shape,
+                color.to_draw_mode(),
+                Transform::from_translation(Vec3::new(0., 0., 100.)),
+            ),
+            rigid_body: RigidBody::Dynamic,
+            velocity: Velocity::default(),
+            collider: Collider::ball(1.),
+            gravity: GravityScale(0.),
+            locked_axes: LockedAxes::TRANSLATION_LOCKED,
         }
     }
 }

@@ -1,14 +1,16 @@
 use crate::{
     config::{self, AppState, GameState},
     core::{
-        crystal::CrystalBundle,
+        crystal::{Crystal, CrystalBundle, CrystalColor},
         input,
         platform::PlatformBundle,
         player::{Player, PlayerBundle},
     },
 };
 use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy_prototype_lyon::prelude::DrawMode;
 use bevy_rapier2d::prelude::*;
+use std::f32::consts::SQRT_2;
 
 pub struct GymPlugin;
 
@@ -21,7 +23,8 @@ impl Plugin for GymPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::Game(GameState::Gym))
                 .with_system(move_player)
-                .with_system(camera_follow),
+                .with_system(camera_follow)
+                .with_system(crystal_treadmill),
         );
     }
 }
@@ -57,9 +60,8 @@ fn startup(mut commands: Commands) {
 
     // Create a player
     commands.spawn_bundle(
-        PlayerBundle::default()
-            .with_color(Color::rgb(1., 1., 1.))
-            .with_size(3., 3.)
+        PlayerBundle::from_shape(4, 1.5 * SQRT_2)
+            .with_color(Color::rgb(1., 1., 1.), Color::rgb(0., 0.5, 0.2))
             .with_position(-0.5, 0.5)
             .with_gravity(0.5),
     );
@@ -153,6 +155,34 @@ fn camera_follow(
         for mut transform in &mut camera_query {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
+        }
+    }
+}
+
+fn crystal_treadmill(
+    mut crystal_query: Query<(&mut Transform, &mut Velocity, &mut Crystal, &mut DrawMode)>,
+) {
+    for (mut transform, mut velocity, mut crystal, mut draw_mode) in &mut crystal_query {
+        let map_size = config::MAP_SIZE as f32;
+        let cur_pos = transform.translation.xy();
+
+        // Crystals have a constant left to right velocity.
+        // Crystals have a constant angular velocity so they look cool :)
+        velocity.linvel = Vec2::new(-4., 0.);
+        velocity.angvel = 4.; // Dancing and twirling... Dancing and twirling...
+
+        // When they leave the playfield, they are moved to the other side
+        // and their color is randomized again.
+        if cur_pos.x <  -map_size / 2. {
+            transform.translation.x = -cur_pos.x;
+            // Further offset the position randomly to avoid patterns
+            transform.translation.x += rand::random::<f32>() * 4.;
+            transform.translation.y = rand::random::<f32>() * map_size - map_size / 2.;
+            
+            transform.rotation = Quat::IDENTITY;
+
+            crystal.crystal_color = CrystalColor::random_primary();
+            *draw_mode = crystal.crystal_color.to_draw_mode();
         }
     }
 }

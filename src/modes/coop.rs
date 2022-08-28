@@ -102,7 +102,7 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     commands.spawn_bundle(
         PlayerBundle::default()
             .with_id(rip.next_id())
-            .with_color(Color::rgb(0., 0.47, 1.))
+            .with_color(Color::rgb(0., 0.47, 1.), Color::rgb(0., 0.5, 0.))
             .with_position(-2., 0.),
     );
 
@@ -110,7 +110,7 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     commands.spawn_bundle(
         PlayerBundle::default()
             .with_id(rip.next_id())
-            .with_color(Color::rgb(0., 0.4, 0.))
+            .with_color(Color::rgb(0., 0.4, 0.), Color::rgb(0., 0., 0.5))
             .with_position(-2., 0.),
     );
 }

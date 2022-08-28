@@ -1,5 +1,9 @@
 use bevy::prelude::*;
+use bevy_prototype_lyon::{entity::ShapeBundle, prelude::*};
 use bevy_rapier2d::prelude::*;
+use std::f32::consts::SQRT_2;
+
+use crate::config;
 
 pub struct LocalPlayerHandle(pub usize);
 
@@ -13,7 +17,7 @@ pub struct PlayerBundle {
     pub player: Player,
     pub rollback: bevy_ggrs::Rollback,
     #[bundle]
-    pub sprite_bundle: SpriteBundle,
+    pub shape_bundle: ShapeBundle,
     pub rigid_body: RigidBody,
     pub velocity: Velocity,
     pub collider: Collider,
@@ -25,18 +29,41 @@ pub struct PlayerBundle {
 }
 
 impl PlayerBundle {
+    pub fn from_shape(sides: usize, radius: f32) -> Self {
+        let shape = shapes::RegularPolygon {
+            sides: sides,
+            feature: shapes::RegularPolygonFeature::Radius(radius),
+            ..shapes::RegularPolygon::default()
+        };
+        Self {
+            shape_bundle: GeometryBuilder::build_as(
+                &shape,
+                DrawMode::Outlined {
+                    fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
+                    outline_mode: StrokeMode::new(Color::PINK, config::GRID_WIDTH),
+                },
+                Transform::from_translation(Vec3::new(0., 0., 100.)),
+            ),
+            collider: Collider::cuboid(radius / SQRT_2, radius / SQRT_2),
+            ..default()
+        }
+    }
+
     pub fn with_gravity(mut self, gravity: f32) -> Self {
         self.gravity = GravityScale(gravity);
         self
     }
 
-    pub fn with_color(mut self, color: Color) -> Self {
-        self.sprite_bundle.sprite.color = color;
+    pub fn with_color(mut self, fill_color: Color, outline_color: Color) -> Self {
+        self.shape_bundle.mode = DrawMode::Outlined {
+            fill_mode: bevy_prototype_lyon::prelude::FillMode::color(fill_color),
+            outline_mode: StrokeMode::new(outline_color, config::GRID_WIDTH),
+        };
         self
     }
 
     pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.sprite_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
+        self.shape_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
         self
     }
 
@@ -45,28 +72,26 @@ impl PlayerBundle {
         self.rollback = bevy_ggrs::Rollback::new(id);
         self
     }
-
-    pub fn with_size(mut self, width : f32, height : f32) -> Self {
-        self.sprite_bundle.sprite.custom_size = Some(Vec2::new(width, height));
-        self.collider = Collider::cuboid(width / 2., height / 2.);
-        self
-    }
 }
 
 impl Default for PlayerBundle {
     fn default() -> Self {
+        let shape = shapes::RegularPolygon {
+            sides: 4,
+            feature: shapes::RegularPolygonFeature::Radius(1.),
+            ..shapes::RegularPolygon::default()
+        };
         Self {
             player: Player { handle: 0 },
             rollback: bevy_ggrs::Rollback::new(0),
-            sprite_bundle: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 100.)),
-                sprite: Sprite {
-                    color: Color::rgb(0.7, 0.0, 0.7),
-                    custom_size: Some(Vec2::new(1., 1.)),
-                    ..default()
+            shape_bundle: GeometryBuilder::build_as(
+                &shape,
+                DrawMode::Outlined {
+                    fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
+                    outline_mode: StrokeMode::new(Color::PINK, config::GRID_WIDTH),
                 },
-                ..default()
-            },
+                Transform::from_translation(Vec3::new(0., 0., 100.)),
+            ),
             rigid_body: RigidBody::Dynamic,
             velocity: Velocity::default(),
             collider: Collider::cuboid(0.5, 0.5),
