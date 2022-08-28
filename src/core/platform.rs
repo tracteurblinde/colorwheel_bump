@@ -15,20 +15,20 @@ pub struct PlatformBundle {
 }
 
 impl PlatformBundle {
-    pub fn new(color: Color, position: Vec3, size: Vec2) -> Self {
-        Self {
-            sprite_bundle: SpriteBundle {
-                transform: Transform::from_translation(position),
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(size),
-                    ..default()
-                },
-                ..default()
-            },
-            collider: Collider::cuboid(size.x / 2., size.y / 2.),
-            ..default()
-        }
+    pub fn with_color(mut self, color: Color) -> Self {
+        self.sprite_bundle.sprite.color = color;
+        self
+    }
+
+    pub fn with_position(mut self, position: Vec3) -> Self {
+        self.sprite_bundle.transform = Transform::from_translation(position);
+        self
+    }
+
+    pub fn with_size(mut self, size: Vec2) -> Self {
+        self.sprite_bundle.sprite.custom_size = Some(size);
+        self.collider = Collider::cuboid(size.x / 2., size.y / 2.);
+        self
     }
 }
 

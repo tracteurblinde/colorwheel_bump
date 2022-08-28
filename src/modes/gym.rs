@@ -20,17 +20,15 @@ pub fn build(app: &mut App) {
 }
 
 fn startup(mut commands: Commands) {
+    let map_size = config::MAP_SIZE as f32;
+
     // Horizontal lines
     for i in 0..=config::MAP_SIZE {
         commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(
-                0.,
-                i as f32 - config::MAP_SIZE as f32 / 2.,
-                10.,
-            )),
+            transform: Transform::from_translation(Vec3::new(0., i as f32 - map_size / 2., 10.)),
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(config::MAP_SIZE as f32, config::GRID_WIDTH)),
+                custom_size: Some(Vec2::new(map_size, config::GRID_WIDTH)),
                 ..default()
             },
             ..default()
@@ -40,14 +38,10 @@ fn startup(mut commands: Commands) {
     // Vertical lines
     for i in 0..=config::MAP_SIZE {
         commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(
-                i as f32 - config::MAP_SIZE as f32 / 2.,
-                0.,
-                10.,
-            )),
+            transform: Transform::from_translation(Vec3::new(i as f32 - map_size / 2., 0., 10.)),
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(config::GRID_WIDTH, config::MAP_SIZE as f32)),
+                custom_size: Some(Vec2::new(config::GRID_WIDTH, map_size)),
                 ..default()
             },
             ..default()
@@ -63,12 +57,32 @@ fn startup(mut commands: Commands) {
             .with_gravity(0.5),
     );
 
-    // Spawn a platform
-    commands.spawn_bundle(PlatformBundle::new(
-        Color::rgb(0.6, 0.6, 0.2),
-        Vec3::new(0., -1.5, 50.),
-        Vec2::new(16., 1.),
-    ));
+    // Spawn a containment cell
+    let border_color = Color::rgb(0.5, 0.5, 0.5);
+    commands.spawn_bundle(
+        PlatformBundle::default()
+            .with_color(border_color)
+            .with_position(Vec3::new(0., -(map_size / 2.), 50.))
+            .with_size(Vec2::new(map_size + 1., 1.)),
+    );
+    commands.spawn_bundle(
+        PlatformBundle::default()
+            .with_color(border_color)
+            .with_position(Vec3::new(0., map_size / 2., 50.))
+            .with_size(Vec2::new(map_size + 1., 1.)),
+    );
+    commands.spawn_bundle(
+        PlatformBundle::default()
+            .with_color(border_color)
+            .with_position(Vec3::new(-(map_size / 2.), 0., 50.))
+            .with_size(Vec2::new(1., map_size + 1.)),
+    );
+    commands.spawn_bundle(
+        PlatformBundle::default()
+            .with_color(border_color)
+            .with_position(Vec3::new(map_size / 2., 0., 50.))
+            .with_size(Vec2::new(1., map_size + 1.)),
+    );
 }
 
 // fn shutdown(mut commands: Commands) {}
@@ -81,14 +95,17 @@ fn move_player(
     let move_speed = 0.005;
     let mut move_delta = input::direction(input::input(keys));
     move_delta = move_delta.normalize_or_zero() * move_speed;
-    move_delta.x = 0.0002; // Ever forward, never learning
+    //move_delta.x = 0.0002; // Ever forward, never learning
 
     for (mut transform, mut velocity, mut external_impulse, _) in &mut player_query {
         external_impulse.impulse = move_delta;
 
         // Clamp the linear velocity
         let max_speed = 15.;
-        velocity.linvel = velocity.linvel.clamp(Vec2::new(-max_speed, -max_speed), Vec2::new(max_speed, max_speed));
+        velocity.linvel = velocity.linvel.clamp(
+            Vec2::new(-max_speed, -max_speed),
+            Vec2::new(max_speed, max_speed),
+        );
 
         //velocity.linvel = move_delta;
 
