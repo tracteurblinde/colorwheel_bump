@@ -55,12 +55,13 @@ fn startup(mut commands: Commands) {
     }
 
     // Create a player
-    commands.spawn_bundle(PlayerBundle::new(
-        0,
-        Color::rgb(0.4, 0.0, 0.6),
-        Vec3::new(-0.5, 0.5, 100.),
-        0,
-    ));
+    commands.spawn_bundle(
+        PlayerBundle::default()
+            .with_color(Color::rgb(0.4, 0.0, 0.6))
+            .with_size(Vec2::new(3., 3.))
+            .with_position(Vec3::new(-0.5, 0.5, 100.))
+            .with_gravity(0.5),
+    );
 
     // Spawn a platform
     commands.spawn_bundle(PlatformBundle::new(
@@ -74,22 +75,31 @@ fn startup(mut commands: Commands) {
 
 fn move_player(
     keys: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalForce, &Player)>,
+    mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalImpulse, &Player)>,
 ) {
-    let move_speed = 0.015;
-    let move_delta = input::direction(input::input(keys)).normalize_or_zero() * move_speed;
+    // TODO: Move the magic constants to the game config
+    let move_speed = 0.005;
+    let mut move_delta = input::direction(input::input(keys));
+    move_delta = move_delta.normalize_or_zero() * move_speed;
+    move_delta.x = 0.0002; // Ever forward, never learning
 
-    for (mut transform, mut velocity, mut external_force, _) in &mut player_query {
-        external_force.force = move_delta;
+    for (mut transform, mut velocity, mut external_impulse, _) in &mut player_query {
+        external_impulse.impulse = move_delta;
+
+        // Clamp the linear velocity
+        let max_speed = 15.;
+        velocity.linvel = velocity.linvel.clamp(Vec2::new(-max_speed, -max_speed), Vec2::new(max_speed, max_speed));
+
+        //velocity.linvel = move_delta;
 
         let cur_pos = transform.translation.xy();
-        // If the player is outside the map, move them back to 0,0, clear forces/velocities
+        // If the player is outside the map, move them back to 0,0, clear impulse/velocities
         if cur_pos.x.abs() > config::MAP_SIZE as f32 / 2.
             || cur_pos.y.abs() > config::MAP_SIZE as f32 / 2.
         {
             transform.translation = Vec3::new(0., 0., 100.);
-            external_force.force = Vec2::ZERO;
-            external_force.torque = 0.;
+            external_impulse.impulse = Vec2::ZERO;
+            external_impulse.torque_impulse = 0.;
             velocity.linvel = Vec2::ZERO;
             velocity.angvel = 0.;
         }

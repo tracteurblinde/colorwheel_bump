@@ -95,20 +95,20 @@ fn start_matchbox_socket(mut commands: Commands, game_config: Res<GameConfig>) {
 
 fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
     // Player 1
-    commands.spawn_bundle(PlayerBundle::new(
-        0,
-        Color::rgb(0., 0.47, 1.),
-        Vec3::new(-2., 0., 100.),
-        rip.next_id(),
-    ));
+    commands.spawn_bundle(
+        PlayerBundle::default()
+            .with_id(rip.next_id())
+            .with_color(Color::rgb(0., 0.47, 1.))
+            .with_position(Vec3::new(-2., 0., 100.)),
+    );
 
     // Player 2
-    commands.spawn_bundle(PlayerBundle::new(
-        0,
-        Color::rgb(0., 0.4, 0.),
-        Vec3::new(-2., 0., 100.),
-        rip.next_id(),
-    ));
+    commands.spawn_bundle(
+        PlayerBundle::default()
+            .with_id(rip.next_id())
+            .with_color(Color::rgb(0., 0.4, 0.))
+            .with_position(Vec3::new(-2., 0., 100.)),
+    );
 }
 
 fn wait_for_players(mut commands: Commands, mut socket: ResMut<Option<WebRtcSocket>>) {
