@@ -33,6 +33,7 @@ impl CrystalColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn random_secondary() -> Self {
         use CrystalColor::*;
         match rand::random::<u8>() % 3 {
@@ -43,6 +44,7 @@ impl CrystalColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn random_tertiary() -> Self {
         use CrystalColor::*;
         match rand::random::<u8>() % 6 {
@@ -80,6 +82,7 @@ impl CrystalColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_primary(&self) -> bool {
         match self {
             CrystalColor::Red | CrystalColor::Blue | CrystalColor::Yellow => true,
@@ -87,6 +90,7 @@ impl CrystalColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_secondary(&self) -> bool {
         match self {
             CrystalColor::Purple | CrystalColor::Green | CrystalColor::Orange => true,
@@ -94,6 +98,7 @@ impl CrystalColor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_tertiary(&self) -> bool {
         !self.is_primary() && !self.is_secondary()
     }

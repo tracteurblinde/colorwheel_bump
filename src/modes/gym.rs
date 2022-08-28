@@ -10,9 +10,7 @@ use crate::{
 use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_prototype_lyon::prelude::{DrawMode, StrokeMode};
 use bevy_rapier2d::prelude::*;
-use num_traits::FromPrimitive;
 use std::f32::consts::SQRT_2;
-use strum::IntoEnumIterator;
 
 pub struct MapConfig {
     pub map_size: Vec2,
