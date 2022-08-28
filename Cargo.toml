@@ -22,8 +22,13 @@ bevy_rapier2d = { version = "0.16", features = ["debug-render", "wasm-bindgen", 
 ggrs = "0.9"
 image = "0.24.3"
 matchbox_socket = { version = "0.3", features = ["ggrs-socket"] }
+num = "0.4"
+num-derive = "0.3"
+num-traits = "0.2"
 rand = "0.8"
 semver = "1.0"
+strum = "0.24"
+strum_macros = "0.24"
 winit = "0.26"
 
 [build-dependencies]

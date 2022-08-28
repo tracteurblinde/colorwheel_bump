@@ -3,8 +3,10 @@ use bevy_ggrs::*;
 use ggrs::PlayerType;
 use matchbox_socket::WebRtcSocket;
 
+const MAP_SIZE: u32 = 42;
+const GRID_WIDTH: f32 = 0.05;
+
 use crate::{
-    config::{GRID_WIDTH, MAP_SIZE},
     core::player::{LocalPlayerHandle, Player, PlayerBundle},
     AppState, GameConfig, GameState,
 };

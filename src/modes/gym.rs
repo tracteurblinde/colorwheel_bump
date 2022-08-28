@@ -1,5 +1,5 @@
 use crate::{
-    config::{self, AppState, GameState},
+    config::{AppState, GameState},
     core::{
         crystal::{Crystal, CrystalBundle, CrystalColor},
         input,
@@ -8,9 +8,32 @@ use crate::{
     },
 };
 use bevy::{math::Vec3Swizzles, prelude::*};
-use bevy_prototype_lyon::prelude::DrawMode;
+use bevy_prototype_lyon::prelude::{DrawMode, StrokeMode};
 use bevy_rapier2d::prelude::*;
+use num_traits::FromPrimitive;
 use std::f32::consts::SQRT_2;
+use strum::IntoEnumIterator;
+
+pub struct MapConfig {
+    pub map_size: Vec2,
+    pub grid_width: f32,
+    pub grid_color: Color,
+    pub crystal_linvel: f32,
+    pub crystal_angvel: f32,
+    pub player_default_color: Color,
+    pub player_outline_color: Color,
+}
+
+const MAP_CONFIG: MapConfig = MapConfig {
+    map_size: Vec2::new(100., 32.),
+    grid_width: 0.05,
+    grid_color: Color::rgb(0.5, 0.5, 0.5),
+    crystal_linvel: 6.,
+    crystal_angvel: 4.,
+    player_default_color: Color::WHITE,
+    player_outline_color: Color::rgb(0., 0.5, 0.2),
+};
+const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_size.y / 2.);
 
 pub struct GymPlugin;
 
@@ -24,21 +47,24 @@ impl Plugin for GymPlugin {
             SystemSet::on_update(AppState::Game(GameState::Gym))
                 .with_system(move_player)
                 .with_system(camera_follow)
-                .with_system(crystal_treadmill),
+                .with_system(crystal_treadmill)
+                .with_system(crystal_collision)
+                .with_system(colorizer),
         );
     }
 }
 
 fn startup(mut commands: Commands) {
-    let map_size = config::MAP_SIZE as f32;
+    let size = MAP_CONFIG.map_size;
+    let hsize = size / 2.;
 
     // Horizontal lines
-    for i in 0..=config::MAP_SIZE {
+    for i in 0..=MAP_CONFIG.map_size.y as i32 {
         commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0., i as f32 - map_size / 2., 10.)),
+            transform: Transform::from_translation(Vec3::new(0., i as f32 - hsize.y, 10.)),
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(map_size, config::GRID_WIDTH)),
+                custom_size: Some(Vec2::new(size.x, MAP_CONFIG.grid_width)),
                 ..default()
             },
             ..default()
@@ -46,12 +72,12 @@ fn startup(mut commands: Commands) {
     }
 
     // Vertical lines
-    for i in 0..=config::MAP_SIZE {
+    for i in 0..=MAP_CONFIG.map_size.x as i32 {
         commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(i as f32 - map_size / 2., 0., 10.)),
+            transform: Transform::from_translation(Vec3::new(i as f32 - hsize.x, 0., 10.)),
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(config::GRID_WIDTH, map_size)),
+                custom_size: Some(Vec2::new(MAP_CONFIG.grid_width, size.y)),
                 ..default()
             },
             ..default()
@@ -59,44 +85,49 @@ fn startup(mut commands: Commands) {
     }
 
     // Create a player
-    commands.spawn_bundle(
-        PlayerBundle::from_shape(4, 1.5 * SQRT_2)
-            .with_color(Color::rgb(1., 1., 1.), Color::rgb(0., 0.5, 0.2))
-            .with_position(-0.5, 0.5)
-            .with_gravity(0.5),
-    );
+    commands
+        .spawn_bundle(
+            PlayerBundle::from_shape(4, 1.5 * SQRT_2)
+                .with_color(
+                    MAP_CONFIG.player_default_color,
+                    MAP_CONFIG.player_outline_color,
+                )
+                .with_position(-0.5, 0.5)
+                .with_gravity(0.5),
+        )
+        .insert(LockedAxes::ROTATION_LOCKED | LockedAxes::TRANSLATION_LOCKED_X);
 
     // Spawn a containment cell
     let border_color = Color::rgb(0.5, 0.5, 0.5);
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(0., -(map_size / 2.))
-            .with_size(map_size + 1., 1.),
+            .with_position(0., -hsize.y)
+            .with_size(size.x + 1., 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(0., map_size / 2.)
-            .with_size(map_size + 1., 1.),
+            .with_position(0., hsize.y)
+            .with_size(size.x + 1., 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(-(map_size / 2.), 0.)
-            .with_size(1., map_size + 1.),
+            .with_position(-hsize.x, 0.)
+            .with_size(1., size.y + 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(map_size / 2., 0.)
-            .with_size(1., map_size + 1.),
+            .with_position(hsize.x, 0.)
+            .with_size(1., size.y + 1.),
     );
 
-    // Spawn 10 crystals to collect
-    for _ in 0..10 {
-        let x = rand::random::<f32>() * map_size - map_size / 2.;
-        let y = rand::random::<f32>() * map_size - map_size / 2.;
+    // Spawn crystals to collect
+    for _ in 0..32 {
+        let x = rand::random::<f32>() * size.x - hsize.x;
+        let y = rand::random::<f32>() * size.y - hsize.y;
         commands.spawn_bundle(CrystalBundle::random_primary().with_position(x, y));
     }
 }
@@ -128,9 +159,7 @@ fn move_player(
 
         let cur_pos = transform.translation.xy();
         // If the player is outside the map, move them back to 0,0, clear impulse/velocities
-        if cur_pos.x.abs() > config::MAP_SIZE as f32 / 2.
-            || cur_pos.y.abs() > config::MAP_SIZE as f32 / 2.
-        {
+        if cur_pos.x.abs() > HMAP_SIZE.x || cur_pos.y.abs() > HMAP_SIZE.y {
             transform.translation = Vec3::new(0., 0., 100.);
             transform.rotation = Quat::IDENTITY;
             external_impulse.impulse = Vec2::ZERO;
@@ -162,27 +191,88 @@ fn camera_follow(
 fn crystal_treadmill(
     mut crystal_query: Query<(&mut Transform, &mut Velocity, &mut Crystal, &mut DrawMode)>,
 ) {
+    let map_size = MAP_CONFIG.map_size;
+    let hmap_size = map_size / 2.;
+
     for (mut transform, mut velocity, mut crystal, mut draw_mode) in &mut crystal_query {
-        let map_size = config::MAP_SIZE as f32;
         let cur_pos = transform.translation.xy();
 
         // Crystals have a constant left to right velocity.
         // Crystals have a constant angular velocity so they look cool :)
-        velocity.linvel = Vec2::new(-4., 0.);
-        velocity.angvel = 4.; // Dancing and twirling... Dancing and twirling...
+        velocity.linvel = Vec2::new(-MAP_CONFIG.crystal_linvel, 0.);
+        velocity.angvel = MAP_CONFIG.crystal_angvel; // Dancing and twirling... Dancing and twirling...
 
         // When they leave the playfield, they are moved to the other side
         // and their color is randomized again.
-        if cur_pos.x <  -map_size / 2. {
-            transform.translation.x = -cur_pos.x;
+        if cur_pos.x < -hmap_size.x || crystal.collected {
+            transform.translation.x = hmap_size.x;
             // Further offset the position randomly to avoid patterns
             transform.translation.x += rand::random::<f32>() * 4.;
-            transform.translation.y = rand::random::<f32>() * map_size - map_size / 2.;
-            
+            transform.translation.y = rand::random::<f32>() * map_size.y - hmap_size.y;
+
             transform.rotation = Quat::IDENTITY;
 
             crystal.crystal_color = CrystalColor::random_primary();
             *draw_mode = crystal.crystal_color.to_draw_mode();
+
+            crystal.collected = false;
         }
+    }
+}
+
+/// Collision detection between player and crystals.
+/// When a player collides with a crystal, the crystal is destroyed and the player's color
+/// is changed toward the crystal's color (or to it if the player is empty).
+/// The Crystal is respawned at the right edge of the map with a random color.
+fn crystal_collision(
+    mut player_query: Query<(&mut Player, &Transform)>,
+    mut crystal_query: Query<(&mut Crystal, &Transform)>,
+) {
+    for (mut player, player_transform) in &mut player_query {
+        let player_pos = player_transform.translation.xy();
+
+        for (mut crystal, crystal_transform) in &mut crystal_query {
+            let crystal_pos = crystal_transform.translation.xy();
+
+            if (crystal_pos - player_pos).length() < 2.6 {
+                // Player and crystal are touching, change the player's color
+                match player.color {
+                    Some(color) => {
+                        player.color = Some(color.combine(&crystal.crystal_color));
+                    }
+                    None => {
+                        player.color = Some(crystal.crystal_color);
+                    }
+                }
+
+                // Don't actually despawn, just mark as collected and let the treadmill handle it
+                crystal.collected = true;
+            }
+        }
+    }
+}
+
+/// Loops through the player/crystals and sets the draw mode to match the corresponding color
+fn colorizer(
+    mut player_query: Query<(&mut DrawMode, &Player, Without<Crystal>)>,
+    mut crystal_query: Query<(&mut DrawMode, &Crystal, Without<Player>)>,
+) {
+    for (mut draw_mode, player, _) in &mut player_query {
+        let color = match player.color {
+            Some(crystal_color) => crystal_color.to_color(),
+            None => MAP_CONFIG.player_default_color,
+        };
+
+        *draw_mode = DrawMode::Outlined {
+            fill_mode: bevy_prototype_lyon::prelude::FillMode::color(color),
+            outline_mode: StrokeMode::new(
+                MAP_CONFIG.player_outline_color,
+                crate::core::player::PLAYER_OUTLINE_WIDTH,
+            ),
+        }
+    }
+
+    for (mut draw_mode, crystal, _) in &mut crystal_query {
+        *draw_mode = crystal.crystal_color.to_draw_mode();
     }
 }

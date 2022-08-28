@@ -1,6 +1,6 @@
 use bevy::prelude::Color;
-pub const MAP_SIZE: u32 = 42;
-pub const GRID_WIDTH: f32 = 0.05;
+// pub const MAP_SIZE: u32 = 42;
+// pub const GRID_WIDTH: f32 = 0.05;
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]

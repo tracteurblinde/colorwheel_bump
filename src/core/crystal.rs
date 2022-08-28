@@ -1,28 +1,25 @@
 use bevy::prelude::*;
 use bevy_prototype_lyon::{entity::ShapeBundle, prelude::*};
 use bevy_rapier2d::prelude::*;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
-use crate::config;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, FromPrimitive)]
 pub enum CrystalColor {
-    // Primary
-    Blue,
-    Red,
-    Yellow,
-
-    // Secondary
-    Green,
-    Purple,
-    Orange,
-
-    // Tertiary
-    BlueGreen,
-    BluePurple,
-    RedPurple,
-    RedOrange,
+    Orange = 0,
     YellowOrange,
+    Yellow,
     YellowGreen,
+    Green,
+    BlueGreen,
+    Blue,
+    BluePurple,
+    Purple,
+    RedPurple,
+    Red,
+    RedOrange,
 }
 
 impl CrystalColor {
@@ -36,27 +33,50 @@ impl CrystalColor {
         }
     }
 
+    pub fn random_secondary() -> Self {
+        use CrystalColor::*;
+        match rand::random::<u8>() % 3 {
+            0 => Orange,
+            1 => Green,
+            2 => Purple,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn random_tertiary() -> Self {
+        use CrystalColor::*;
+        match rand::random::<u8>() % 6 {
+            0 => YellowOrange,
+            1 => YellowGreen,
+            2 => BlueGreen,
+            3 => BluePurple,
+            4 => RedPurple,
+            5 => RedOrange,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn to_color(&self) -> Color {
         match self {
-            CrystalColor::Blue => Color::rgb(0.0, 0.0, 1.0),
-            CrystalColor::Red => Color::rgb(1.0, 0.0, 0.0),
-            CrystalColor::Yellow => Color::rgb(1.0, 1.0, 0.0),
-            CrystalColor::Green => Color::rgb(0.0, 1.0, 0.0),
-            CrystalColor::Purple => Color::rgb(1.0, 0.0, 1.0),
-            CrystalColor::Orange => Color::rgb(1.0, 0.5, 0.0),
-            CrystalColor::BlueGreen => Color::rgb(0.0, 1.0, 1.0),
-            CrystalColor::BluePurple => Color::rgb(0.5, 0.0, 1.0),
-            CrystalColor::RedPurple => Color::rgb(1.0, 0.0, 0.5),
-            CrystalColor::RedOrange => Color::rgb(1.0, 0.5, 0.0),
-            CrystalColor::YellowOrange => Color::rgb(1.0, 1.0, 0.5),
-            CrystalColor::YellowGreen => Color::rgb(1.0, 1.0, 0.0),
+            CrystalColor::Orange => Color::rgb_u8(255, 126, 0),
+            CrystalColor::YellowOrange => Color::rgb_u8(255, 218, 48),
+            CrystalColor::Yellow => Color::rgb_u8(255, 255, 0),
+            CrystalColor::YellowGreen => Color::rgb_u8(192, 233, 17),
+            CrystalColor::Green => Color::rgb_u8(38, 155, 38),
+            CrystalColor::BlueGreen => Color::rgb_u8(0, 141, 136),
+            CrystalColor::Blue => Color::rgb_u8(19, 49, 192),
+            CrystalColor::BluePurple => Color::rgb_u8(109, 83, 192),
+            CrystalColor::Purple => Color::rgb_u8(114, 51, 143),
+            CrystalColor::RedPurple => Color::rgb_u8(183, 47, 165),
+            CrystalColor::Red => Color::rgb_u8(239, 1, 1),
+            CrystalColor::RedOrange => Color::rgb_u8(255, 62, 0),
         }
     }
 
     pub fn to_draw_mode(&self) -> DrawMode {
         DrawMode::Outlined {
             fill_mode: bevy_prototype_lyon::prelude::FillMode::color(self.to_color()),
-            outline_mode: StrokeMode::new(Color::WHITE, config::GRID_WIDTH),
+            outline_mode: StrokeMode::new(Color::WHITE, 0.05),
         }
     }
 
@@ -78,34 +98,37 @@ impl CrystalColor {
         !self.is_primary() && !self.is_secondary()
     }
 
-    pub fn combine(&self, other: &Self) -> Option<Self> {
-        match (self, other) {
-            (CrystalColor::Blue, CrystalColor::Red) => Some(CrystalColor::Purple),
-            (CrystalColor::Red, CrystalColor::Blue) => Some(CrystalColor::Purple),
-            (CrystalColor::Blue, CrystalColor::Yellow) => Some(CrystalColor::Green),
-            (CrystalColor::Yellow, CrystalColor::Blue) => Some(CrystalColor::Green),
-            (CrystalColor::Red, CrystalColor::Yellow) => Some(CrystalColor::Orange),
-            (CrystalColor::Yellow, CrystalColor::Red) => Some(CrystalColor::Orange),
-            (CrystalColor::Orange, CrystalColor::Red) => Some(CrystalColor::RedOrange),
-            (CrystalColor::Red, CrystalColor::Orange) => Some(CrystalColor::RedOrange),
-            (CrystalColor::Orange, CrystalColor::Yellow) => Some(CrystalColor::YellowOrange),
-            (CrystalColor::Yellow, CrystalColor::Orange) => Some(CrystalColor::YellowOrange),
-            (CrystalColor::Green, CrystalColor::Blue) => Some(CrystalColor::BlueGreen),
-            (CrystalColor::Blue, CrystalColor::Green) => Some(CrystalColor::BlueGreen),
-            (CrystalColor::Green, CrystalColor::Yellow) => Some(CrystalColor::YellowGreen),
-            (CrystalColor::Yellow, CrystalColor::Green) => Some(CrystalColor::YellowGreen),
-            (CrystalColor::Purple, CrystalColor::Blue) => Some(CrystalColor::BluePurple),
-            (CrystalColor::Blue, CrystalColor::Purple) => Some(CrystalColor::BluePurple),
-            (CrystalColor::Purple, CrystalColor::Red) => Some(CrystalColor::RedPurple),
-            (CrystalColor::Red, CrystalColor::Purple) => Some(CrystalColor::RedPurple),
-            _ => None,
-        }
+    pub fn combine(&self, other: &Self) -> Self {
+        let old_color: i8 = *self as i8;
+        let new_color: i8 = *other as i8;
+        let num_colors = CrystalColor::iter().count() as i8;
+        let half_num_colors = (CrystalColor::iter().count() / 2) as i8;
+
+        // TODO: I'm very confident there's a way to do this without branching
+        let new_color = if new_color > old_color {
+            if new_color - old_color <= half_num_colors {
+                old_color + 1
+            } else {
+                old_color - 1
+            }
+        } else if new_color < old_color {
+            if old_color - new_color <= half_num_colors {
+                old_color - 1
+            } else {
+                old_color + 1
+            }
+        } else {
+            old_color
+        };
+
+        CrystalColor::from_i8(new_color % num_colors).unwrap()
     }
 }
 
 #[derive(Component)]
 pub struct Crystal {
     pub crystal_color: CrystalColor,
+    pub collected: bool,
 }
 
 #[derive(Bundle)]
@@ -126,6 +149,7 @@ impl CrystalBundle {
         Self::default().with_color(crystal_color)
     }
     pub fn with_color(mut self, crystal_color: CrystalColor) -> Self {
+        self.crystal.crystal_color = crystal_color;
         self.shape_bundle.mode = crystal_color.to_draw_mode();
         self
     }
@@ -147,6 +171,7 @@ impl Default for CrystalBundle {
         Self {
             crystal: Crystal {
                 crystal_color: color,
+                collected: false,
             },
             shape_bundle: GeometryBuilder::build_as(
                 &shape,

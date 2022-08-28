@@ -3,13 +3,16 @@ use bevy_prototype_lyon::{entity::ShapeBundle, prelude::*};
 use bevy_rapier2d::prelude::*;
 use std::f32::consts::SQRT_2;
 
-use crate::config;
+use super::crystal::CrystalColor;
+
+pub const PLAYER_OUTLINE_WIDTH: f32 = 0.05;
 
 pub struct LocalPlayerHandle(pub usize);
 
 #[derive(Component)]
 pub struct Player {
     pub handle: usize,
+    pub color: Option<CrystalColor>,
 }
 
 #[derive(Bundle)]
@@ -40,7 +43,7 @@ impl PlayerBundle {
                 &shape,
                 DrawMode::Outlined {
                     fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
-                    outline_mode: StrokeMode::new(Color::PINK, config::GRID_WIDTH),
+                    outline_mode: StrokeMode::new(Color::PINK, PLAYER_OUTLINE_WIDTH),
                 },
                 Transform::from_translation(Vec3::new(0., 0., 100.)),
             ),
@@ -57,7 +60,7 @@ impl PlayerBundle {
     pub fn with_color(mut self, fill_color: Color, outline_color: Color) -> Self {
         self.shape_bundle.mode = DrawMode::Outlined {
             fill_mode: bevy_prototype_lyon::prelude::FillMode::color(fill_color),
-            outline_mode: StrokeMode::new(outline_color, config::GRID_WIDTH),
+            outline_mode: StrokeMode::new(outline_color, PLAYER_OUTLINE_WIDTH),
         };
         self
     }
@@ -82,13 +85,13 @@ impl Default for PlayerBundle {
             ..shapes::RegularPolygon::default()
         };
         Self {
-            player: Player { handle: 0 },
+            player: Player { handle: 0, color: None },
             rollback: bevy_ggrs::Rollback::new(0),
             shape_bundle: GeometryBuilder::build_as(
                 &shape,
                 DrawMode::Outlined {
                     fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
-                    outline_mode: StrokeMode::new(Color::PINK, config::GRID_WIDTH),
+                    outline_mode: StrokeMode::new(Color::PINK, PLAYER_OUTLINE_WIDTH),
                 },
                 Transform::from_translation(Vec3::new(0., 0., 100.)),
             ),

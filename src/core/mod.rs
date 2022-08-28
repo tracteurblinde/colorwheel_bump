@@ -69,8 +69,7 @@ fn move_players(
         let move_delta = direction * move_speed;
 
         let old_pos = transform.translation.xy();
-        let limit = Vec2::splat(crate::config::MAP_SIZE as f32 / 2. - 0.5);
-        let new_pos = (old_pos + move_delta).clamp(-limit, limit);
+        let new_pos = old_pos + move_delta;
 
         transform.translation.x = new_pos.x;
         transform.translation.y = new_pos.y;
