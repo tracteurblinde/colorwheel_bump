@@ -9,18 +9,22 @@ use crate::{
     AppState, GameConfig, GameState,
 };
 
-pub fn build(app: &mut App) {
-    app.add_system_set(
-        SystemSet::on_enter(AppState::Game(GameState::Coop))
-            .with_system(setup_board)
-            .with_system(start_matchbox_socket)
-            .with_system(spawn_players),
-    )
-    .add_system_set(
-        SystemSet::on_update(AppState::Game(GameState::Coop))
-            .with_system(wait_for_players)
-            .with_system(camera_follow),
-    );
+pub struct CoopPlugin;
+
+impl Plugin for CoopPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(AppState::Game(GameState::Coop))
+                .with_system(setup_board)
+                .with_system(start_matchbox_socket)
+                .with_system(spawn_players),
+        )
+        .add_system_set(
+            SystemSet::on_update(AppState::Game(GameState::Coop))
+                .with_system(wait_for_players)
+                .with_system(camera_follow),
+        );
+    }
 }
 
 fn setup_board(mut commands: Commands) {

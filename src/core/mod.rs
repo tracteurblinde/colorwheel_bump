@@ -1,6 +1,6 @@
-use bevy::math::Vec3Swizzles;
-use bevy::prelude::*;
+use bevy::{math::Vec3Swizzles, prelude::*, render::camera::ScalingMode};
 use bevy_ggrs::*;
+use bevy_rapier2d::prelude::*;
 use ggrs::Config;
 
 use crate::{
@@ -14,17 +14,29 @@ pub mod input;
 pub mod platform;
 pub mod player;
 
-pub fn build(app: &mut App) {
-    GGRSPlugin::<GgrsConfig>::new()
-        .with_input_system(input::input_mp)
-        .with_rollback_schedule(Schedule::default().with_stage(
-            "ROLLBACK_STAGE",
-            SystemStage::single_threaded().with_system_set(
-                SystemSet::on_update(AppState::Game(GameState::Any)).with_system(move_players),
-            ),
-        ))
-        .register_rollback_type::<Transform>()
-        .build(app);
+pub struct CorePlugin;
+
+impl Plugin for CorePlugin {
+    fn build(&self, app: &mut App) {
+        GGRSPlugin::<GgrsConfig>::new()
+            .with_input_system(input::input_mp)
+            .with_rollback_schedule(Schedule::default().with_stage(
+                "ROLLBACK_STAGE",
+                SystemStage::single_threaded().with_system_set(
+                    SystemSet::on_update(AppState::Game(GameState::Any)).with_system(move_players),
+                ),
+            ))
+            .register_rollback_type::<Transform>()
+            .build(app);
+
+        app.add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+            .add_startup_system(spawn_camera);
+
+        if cfg!(debug_assertions) {
+            app.add_plugin(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
+                .add_plugin(RapierDebugRenderPlugin::default());
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -59,4 +71,15 @@ fn move_players(
         transform.translation.x = new_pos.x;
         transform.translation.y = new_pos.y;
     }
+}
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn_bundle(Camera2dBundle {
+        projection: OrthographicProjection {
+            scale: 1.,
+            scaling_mode: ScalingMode::FixedVertical(42.0),
+            ..default()
+        },
+        ..default()
+    });
 }

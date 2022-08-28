@@ -1,10 +1,18 @@
-use crate::config::{AppState, GameState, MenuState, BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_PRESSED_COLOR};
+use crate::config::{
+    AppState, GameState, MenuState, BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_PRESSED_COLOR,
+};
 use bevy::prelude::*;
 
-pub fn build(app: &mut App) {
-    app.add_system_set(SystemSet::on_enter(AppState::Menu(MenuState::Main)).with_system(startup));
-    app.add_system_set(SystemSet::on_exit(AppState::Menu(MenuState::Main)).with_system(shutdown));
-    app.add_system_set(SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(update));
+pub struct MenuPlugin;
+
+impl Plugin for MenuPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(AppState::Menu(MenuState::Main)).with_system(startup),
+        )
+        .add_system_set(SystemSet::on_exit(AppState::Menu(MenuState::Main)).with_system(shutdown))
+        .add_system_set(SystemSet::on_update(AppState::Menu(MenuState::Main)).with_system(update));
+    }
 }
 
 // Marker components for UI elements

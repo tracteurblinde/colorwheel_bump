@@ -21,6 +21,7 @@ pub struct PlayerBundle {
     pub external_impulse: ExternalImpulse,
     pub gravity: GravityScale,
     pub collider_mass_properties: ColliderMassProperties,
+    pub locked_axes: LockedAxes,
 }
 
 impl PlayerBundle {
@@ -73,6 +74,7 @@ impl Default for PlayerBundle {
             external_impulse: ExternalImpulse::default(),
             gravity: GravityScale::default(),
             collider_mass_properties: ColliderMassProperties::Density(1.0),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
         }
     }
 }

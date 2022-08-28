@@ -10,14 +10,20 @@ use crate::{
 use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-pub fn build(app: &mut App) {
-    app.add_system_set(SystemSet::on_enter(AppState::Game(GameState::Gym)).with_system(startup));
-    // app.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Gym)).with_system(shutdown));
-    app.add_system_set(
-        SystemSet::on_update(AppState::Game(GameState::Gym))
-            .with_system(move_player)
-            .with_system(camera_follow),
-    );
+pub struct GymPlugin;
+
+impl Plugin for GymPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(AppState::Game(GameState::Gym)).with_system(startup),
+        )
+        //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Gym)).with_system(shutdown))
+        .add_system_set(
+            SystemSet::on_update(AppState::Game(GameState::Gym))
+                .with_system(move_player)
+                .with_system(camera_follow),
+        );
+    }
 }
 
 fn startup(mut commands: Commands) {
