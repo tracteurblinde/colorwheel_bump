@@ -4251,6 +4251,7 @@ dependencies = [
  "ggrs",
  "image",
  "matchbox_socket",
+ "rand",
  "semver",
  "vergen",
  "winit",

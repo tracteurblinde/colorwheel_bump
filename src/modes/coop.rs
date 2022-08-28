@@ -99,7 +99,7 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
         PlayerBundle::default()
             .with_id(rip.next_id())
             .with_color(Color::rgb(0., 0.47, 1.))
-            .with_position(Vec3::new(-2., 0., 100.)),
+            .with_position(-2., 0.),
     );
 
     // Player 2
@@ -107,7 +107,7 @@ fn spawn_players(mut commands: Commands, mut rip: ResMut<RollbackIdProvider>) {
         PlayerBundle::default()
             .with_id(rip.next_id())
             .with_color(Color::rgb(0., 0.4, 0.))
-            .with_position(Vec3::new(-2., 0., 100.)),
+            .with_position(-2., 0.),
     );
 }
 

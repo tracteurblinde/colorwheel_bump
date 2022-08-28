@@ -20,7 +20,7 @@ pub struct PlayerBundle {
     pub restitution: Restitution,
     pub external_impulse: ExternalImpulse,
     pub gravity: GravityScale,
-    pub collider_mass_properties: ColliderMassProperties
+    pub collider_mass_properties: ColliderMassProperties,
 }
 
 impl PlayerBundle {
@@ -34,8 +34,8 @@ impl PlayerBundle {
         self
     }
 
-    pub fn with_position(mut self, position: Vec3) -> Self {
-        self.sprite_bundle.transform = Transform::from_translation(position);
+    pub fn with_position(mut self, x: f32, y: f32) -> Self {
+        self.sprite_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
         self
     }
 
@@ -45,9 +45,9 @@ impl PlayerBundle {
         self
     }
 
-    pub fn with_size(mut self, size: Vec2) -> Self {
-        self.sprite_bundle.sprite.custom_size = Some(size);
-        self.collider = Collider::cuboid(size.x / 2., size.y / 2.);
+    pub fn with_size(mut self, width : f32, height : f32) -> Self {
+        self.sprite_bundle.sprite.custom_size = Some(Vec2::new(width, height));
+        self.collider = Collider::cuboid(width / 2., height / 2.);
         self
     }
 }
@@ -72,7 +72,7 @@ impl Default for PlayerBundle {
             restitution: Restitution::coefficient(0.7),
             external_impulse: ExternalImpulse::default(),
             gravity: GravityScale::default(),
-            collider_mass_properties: ColliderMassProperties::Density(1.0)
+            collider_mass_properties: ColliderMassProperties::Density(1.0),
         }
     }
 }

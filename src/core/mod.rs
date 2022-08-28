@@ -9,6 +9,7 @@ use crate::{
 };
 
 pub mod component;
+pub mod crystal;
 pub mod input;
 pub mod platform;
 pub mod player;

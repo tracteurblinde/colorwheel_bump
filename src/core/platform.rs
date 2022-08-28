@@ -11,7 +11,6 @@ pub struct PlatformBundle {
     pub platform: Platform,
     pub collider: Collider,
     pub rigid_body: RigidBody,
-
 }
 
 impl PlatformBundle {
@@ -20,14 +19,14 @@ impl PlatformBundle {
         self
     }
 
-    pub fn with_position(mut self, position: Vec3) -> Self {
-        self.sprite_bundle.transform = Transform::from_translation(position);
+    pub fn with_position(mut self, x: f32, y: f32) -> Self {
+        self.sprite_bundle.transform = Transform::from_translation(Vec3::new(x, y, 50.));
         self
     }
 
-    pub fn with_size(mut self, size: Vec2) -> Self {
-        self.sprite_bundle.sprite.custom_size = Some(size);
-        self.collider = Collider::cuboid(size.x / 2., size.y / 2.);
+    pub fn with_size(mut self, width: f32, height: f32) -> Self {
+        self.sprite_bundle.sprite.custom_size = Some(Vec2::new(width, height));
+        self.collider = Collider::cuboid(width / 2., height / 2.);
         self
     }
 }

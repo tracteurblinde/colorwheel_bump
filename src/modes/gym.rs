@@ -1,6 +1,7 @@
 use crate::{
     config::{self, AppState, GameState},
     core::{
+        crystal::CrystalBundle,
         input,
         platform::PlatformBundle,
         player::{Player, PlayerBundle},
@@ -51,9 +52,9 @@ fn startup(mut commands: Commands) {
     // Create a player
     commands.spawn_bundle(
         PlayerBundle::default()
-            .with_color(Color::rgb(0.4, 0.0, 0.6))
-            .with_size(Vec2::new(3., 3.))
-            .with_position(Vec3::new(-0.5, 0.5, 100.))
+            .with_color(Color::rgb(1., 1., 1.))
+            .with_size(3., 3.)
+            .with_position(-0.5, 0.5)
             .with_gravity(0.5),
     );
 
@@ -62,27 +63,34 @@ fn startup(mut commands: Commands) {
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(Vec3::new(0., -(map_size / 2.), 50.))
-            .with_size(Vec2::new(map_size + 1., 1.)),
+            .with_position(0., -(map_size / 2.))
+            .with_size(map_size + 1., 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(Vec3::new(0., map_size / 2., 50.))
-            .with_size(Vec2::new(map_size + 1., 1.)),
+            .with_position(0., map_size / 2.)
+            .with_size(map_size + 1., 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(Vec3::new(-(map_size / 2.), 0., 50.))
-            .with_size(Vec2::new(1., map_size + 1.)),
+            .with_position(-(map_size / 2.), 0.)
+            .with_size(1., map_size + 1.),
     );
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
-            .with_position(Vec3::new(map_size / 2., 0., 50.))
-            .with_size(Vec2::new(1., map_size + 1.)),
+            .with_position(map_size / 2., 0.)
+            .with_size(1., map_size + 1.),
     );
+
+    // Spawn 10 crystals to collect
+    for _ in 0..10 {
+        let x = rand::random::<f32>() * map_size - map_size / 2.;
+        let y = rand::random::<f32>() * map_size - map_size / 2.;
+        commands.spawn_bundle(CrystalBundle::random_primary().with_position(x, y));
+    }
 }
 
 // fn shutdown(mut commands: Commands) {}
@@ -91,7 +99,7 @@ fn move_player(
     keys: Res<Input<KeyCode>>,
     mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalImpulse, &Player)>,
 ) {
-    // TODO: Move the magic constants to the game config
+    // TODO: Move the magic constants to a gym game config
     let move_speed = 0.005;
     let mut move_delta = input::direction(input::input(keys));
     move_delta = move_delta.normalize_or_zero() * move_speed;
@@ -99,6 +107,7 @@ fn move_player(
 
     for (mut transform, mut velocity, mut external_impulse, _) in &mut player_query {
         external_impulse.impulse = move_delta;
+        transform.rotation = Quat::IDENTITY;
 
         // Clamp the linear velocity
         let max_speed = 15.;
@@ -115,6 +124,7 @@ fn move_player(
             || cur_pos.y.abs() > config::MAP_SIZE as f32 / 2.
         {
             transform.translation = Vec3::new(0., 0., 100.);
+            transform.rotation = Quat::IDENTITY;
             external_impulse.impulse = Vec2::ZERO;
             external_impulse.torque_impulse = 0.;
             velocity.linvel = Vec2::ZERO;
