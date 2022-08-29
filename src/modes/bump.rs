@@ -24,6 +24,7 @@ pub struct MapConfig {
     pub background_speed: f32,
     pub colorwheel_height: f32,
     pub colorwheel_radius: f32,
+    pub help_height: f32,
 }
 
 const MAP_CONFIG: MapConfig = MapConfig {
@@ -32,37 +33,42 @@ const MAP_CONFIG: MapConfig = MapConfig {
     grid_color: Color::rgb(0.5, 0.5, 0.5),
     crystal_linvel: 6.,
     crystal_angvel: 4.,
-    player_default_color: Color::WHITE,
+    player_default_color: Color::BLACK,
     player_outline_color: Color::WHITE,
     background_speed: 3.,
     colorwheel_height: 8.,
     colorwheel_radius: 2.,
+    help_height: 5.5,
 };
 const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_size.y / 2.);
 
 #[derive(Component)]
 struct VerticalLine;
-
 #[derive(Component)]
 struct ColorWheelWedge(CrystalColor);
-
-#[derive(Clone, Debug)]
-struct TargetColor(CrystalColor);
-
 #[derive(Component)]
 struct ColorWheelIndicator;
-
 #[derive(Component)]
 struct ColorWheel;
-
 #[derive(Component)]
 struct ScoreText;
+#[derive(PartialEq, Eq)]
+enum FadeDirection {
+    Visible,
+    FadingIn,
+    FadingOut,
+    NotVisible,
+}
+#[derive(Component)]
+struct HelpText {
+    pub fade_direction: FadeDirection,
+    pub fade_start_time: f64,
+}
 
-#[derive(Clone, Debug)]
 struct CurrentColor(Option<CrystalColor>);
-
-#[derive(Clone, Debug)]
 struct Score(u32);
+struct MostRecentMovement(Option<f64>);
+struct TargetColor(CrystalColor);
 
 pub struct BumpPlugin;
 
@@ -71,6 +77,7 @@ impl Plugin for BumpPlugin {
         app.insert_resource(Score(0))
             .insert_resource(CurrentColor(None))
             .insert_resource(TargetColor(CrystalColor::random_primary()))
+            .insert_resource(MostRecentMovement(None))
             .add_system_set(
                 SystemSet::on_enter(AppState::Game(GameState::Bump))
                     .with_system(startup)
@@ -91,12 +98,13 @@ impl Plugin for BumpPlugin {
                     .with_system(colorwheel_follow)
                     .with_system(colorwheel_indicator_update)
                     .with_system(colorwheel_wedge_update)
-                    .with_system(update_score),
+                    .with_system(update_score)
+                    .with_system(update_help),
             );
     }
 }
 
-fn startup(mut commands: Commands) {
+fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let size = MAP_CONFIG.map_size;
     let hsize = size / 2.;
 
@@ -162,6 +170,26 @@ fn startup(mut commands: Commands) {
         let y = rand::random::<f32>() * size.y - hsize.y;
         commands.spawn_bundle(CrystalBundle::random_primary().with_position(x, y));
     }
+
+    // Spawn the help text
+    let font = asset_server.load("fonts/Hind-Regular.otf");
+    let text_style = TextStyle {
+        font,
+        font_size: 60.0,
+        color: Color::WHITE,
+    };
+    let box_position = Vec3::new(0., 0.05, 200.);
+    let score_scale = Vec3::splat(1. / 42.);
+    commands
+    .spawn_bundle(Text2dBundle {
+        text: Text::from_section("Touch/Click/Space to jump.\nCollect the hexes to\ntraverse the colorwheel\n and reach the highlighted segment.", text_style).with_alignment(TextAlignment {
+            vertical: VerticalAlign::Top,
+            horizontal: HorizontalAlign::Center,
+        }),
+        transform: Transform::from_translation(box_position).with_scale(score_scale),
+        ..default()
+    })
+    .insert(HelpText{fade_direction: FadeDirection::Visible, fade_start_time: 0.});
 }
 
 // fn shutdown(mut commands: Commands) {}
@@ -203,6 +231,8 @@ fn move_player(
         &mut ExternalImpulse,
         &mut Player,
     )>,
+    mut most_recent_movement: ResMut<MostRecentMovement>,
+    time: Res<Time>,
 ) {
     // TODO: Move the magic constants to a Bump game config
     for (mut transform, mut velocity, mut external_impulse, mut player) in &mut player_query {
@@ -210,6 +240,10 @@ fn move_player(
         let mut move_delta = player.movement_dir;
         if !player.action_down {
             player.movement_dir = Vec2::ZERO;
+        }
+
+        if move_delta.length() > 0. {
+            *most_recent_movement = MostRecentMovement(Some(time.seconds_since_startup()));
         }
 
         move_delta = move_delta.normalize_or_zero() * move_speed;
@@ -407,9 +441,6 @@ fn startup_colorwheel(mut commands: Commands, asset_server: Res<AssetServer>) {
                         vertical: VerticalAlign::Center,
                         horizontal: HorizontalAlign::Center,
                     }),
-                    // We align text to the top-left, so this transform is the top-left corner of our text. The
-                    // box is centered at box_position, so it is necessary to move by half of the box size to
-                    // keep the text in the box.
                     transform: Transform::from_translation(box_position).with_scale(score_scale),
                     ..default()
                 })
@@ -570,5 +601,64 @@ fn update_score(
 
     for (mut text, _) in score_text.iter_mut() {
         text.sections[0].value = format!("{:02}", score.0);
+    }
+}
+
+fn update_help(
+    mut help_text: Query<(&mut Transform, &mut Text, &mut HelpText, Without<Player>)>,
+    players: Query<(&Transform, &Player, Without<HelpText>)>,
+    most_recent_movement: Res<MostRecentMovement>,
+    time: Res<Time>,
+) {
+    for (mut transform, mut text, mut help_text, _) in help_text.iter_mut() {
+        for (player_transform, _, _) in players.iter() {
+            transform.translation =
+                player_transform.translation + Vec3::new(0., MAP_CONFIG.help_height, 200.);
+        }
+
+        let dt = (time.seconds_since_startup() - most_recent_movement.0.unwrap_or(-100.)) as f32;
+
+        // If it has been more than 6 seconds since the last movement, fade in the help text over 2 seconds
+        // After a movement, fade out the text over half a second
+        let state = if dt > 8. {
+            FadeDirection::Visible
+        } else if dt > 6. {
+            FadeDirection::FadingIn
+        } else if dt > 0.5 {
+            FadeDirection::NotVisible
+        } else {
+            FadeDirection::FadingOut
+        };
+
+        if help_text.fade_direction == FadeDirection::NotVisible
+            && state == FadeDirection::FadingOut
+        {
+            continue;
+        }
+
+        if help_text.fade_direction == FadeDirection::Visible && state == FadeDirection::FadingIn {
+            continue;
+        }
+
+        if state == FadeDirection::FadingIn
+            || state == FadeDirection::FadingOut && help_text.fade_direction != state
+        {
+            help_text.fade_start_time = time.seconds_since_startup();
+        }
+        help_text.fade_direction = state;
+
+        let color = &mut text.sections[0].style.color;
+
+        let anim_dt = (time.seconds_since_startup() - help_text.fade_start_time) as f32;
+
+        let alpha = match help_text.fade_direction {
+            FadeDirection::Visible => 1.,
+            FadeDirection::FadingIn => (anim_dt - 6.) / 2.,
+            FadeDirection::NotVisible => 0.,
+            FadeDirection::FadingOut => 1. - (anim_dt / 0.5),
+        }
+        .clamp(0., 1.);
+
+        color.set_a(alpha);
     }
 }
