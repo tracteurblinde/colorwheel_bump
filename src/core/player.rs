@@ -11,6 +11,8 @@ pub const PLAYER_OUTLINE_WIDTH: f32 = 0.05;
 #[derive(Component)]
 pub struct Player {
     pub color: Option<CrystalColor>,
+    pub movement_dir: Vec2,
+    pub action_down: bool,
 }
 
 #[derive(Bundle)]
@@ -79,6 +81,8 @@ impl Default for PlayerBundle {
         Self {
             player: Player {
                 color: None,
+                movement_dir: Vec2::ZERO,
+                action_down: false,
             },
             shape_bundle: GeometryBuilder::build_as(
                 &shape,

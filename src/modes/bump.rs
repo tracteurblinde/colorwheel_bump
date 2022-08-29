@@ -2,7 +2,6 @@ use crate::{
     config::{AppState, GameState},
     core::{
         crystal::{Crystal, CrystalBundle, CrystalColor},
-        input,
         platform::PlatformBundle,
         player::{Player, PlayerBundle},
     },
@@ -80,7 +79,10 @@ impl Plugin for BumpPlugin {
             //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
             .add_system_set(
                 SystemSet::on_update(AppState::Game(GameState::Bump))
-                    .with_system(move_player)
+                    .with_system(input_keyboard)
+                    .with_system(input_mouse)
+                    .with_system(input_touch)
+                    .with_system(move_player.after(input_keyboard).after(input_touch))
                     .with_system(camera_follow)
                     .with_system(background_treadmill)
                     .with_system(crystal_treadmill)
@@ -140,7 +142,7 @@ fn startup(mut commands: Commands) {
         .insert(LockedAxes::ROTATION_LOCKED | LockedAxes::TRANSLATION_LOCKED_X);
 
     // Spawn a containment cell
-    let border_color = Color::rgb(0.5, 0.5, 0.5);
+    let border_color = Color::rgb(0.8, 0.8, 0.8);
     commands.spawn_bundle(
         PlatformBundle::default()
             .with_color(border_color)
@@ -164,16 +166,54 @@ fn startup(mut commands: Commands) {
 
 // fn shutdown(mut commands: Commands) {}
 
+pub fn input_keyboard(keys: Res<Input<KeyCode>>, mut player_query: Query<&mut Player>) {
+    if keys.any_pressed([KeyCode::Up, KeyCode::W, KeyCode::Space, KeyCode::Return]) {
+        for mut player in player_query.iter_mut() {
+            player.movement_dir.y = 1.;
+        }
+    }
+}
+
+pub fn input_mouse(mouse: Res<Input<MouseButton>>, mut player_query: Query<&mut Player>) {
+    if mouse.any_pressed([MouseButton::Left]) {
+        for mut player in player_query.iter_mut() {
+            player.movement_dir.y = 1.;
+        }
+    }
+}
+
+pub fn input_touch(touches: Res<Touches>, mut player_query: Query<&mut Player>) {
+    if touches.any_just_pressed() {
+        for mut player in player_query.iter_mut() {
+            player.movement_dir.y = 1.;
+            player.action_down = true;
+        }
+    }
+    if touches.any_just_released() {
+        for mut player in player_query.iter_mut() {
+            player.action_down = false;
+        }
+    }
+}
+
 fn move_player(
-    keys: Res<Input<KeyCode>>,
-    mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalImpulse, &Player)>,
+    mut player_query: Query<(
+        &mut Transform,
+        &mut Velocity,
+        &mut ExternalImpulse,
+        &mut Player,
+    )>,
 ) {
     // TODO: Move the magic constants to a Bump game config
-    let move_speed = 0.005;
-    let mut move_delta = input::direction(input::input(keys));
-    move_delta = move_delta.normalize_or_zero() * move_speed;
+    for (mut transform, mut velocity, mut external_impulse, mut player) in &mut player_query {
+        let move_speed = 0.005;
+        let mut move_delta = player.movement_dir;
+        if !player.action_down {
+            player.movement_dir = Vec2::ZERO;
+        }
 
-    for (mut transform, mut velocity, mut external_impulse, _) in &mut player_query {
+        move_delta = move_delta.normalize_or_zero() * move_speed;
+
         external_impulse.impulse = move_delta;
         transform.rotation = Quat::IDENTITY;
 

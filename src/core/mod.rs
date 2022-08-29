@@ -4,7 +4,6 @@ use bevy_rapier2d::prelude::*;
 
 pub mod component;
 pub mod crystal;
-pub mod input;
 pub mod platform;
 pub mod player;
 
