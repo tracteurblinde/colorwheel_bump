@@ -166,11 +166,7 @@ fn camera_follow(
     player_query: Query<(&Transform, &Player)>,
     mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
 ) {
-    for (player_transform, player) in &player_query {
-        if player.handle != 0 {
-            continue;
-        }
-
+    for (player_transform, _) in &player_query {
         let pos = player_transform.translation;
 
         for mut transform in &mut camera_query {

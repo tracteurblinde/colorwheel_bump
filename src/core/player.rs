@@ -7,18 +7,15 @@ use super::crystal::CrystalColor;
 
 pub const PLAYER_OUTLINE_WIDTH: f32 = 0.05;
 
-pub struct LocalPlayerHandle(pub usize);
 
 #[derive(Component)]
 pub struct Player {
-    pub handle: usize,
     pub color: Option<CrystalColor>,
 }
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
     pub player: Player,
-    pub rollback: bevy_ggrs::Rollback,
     #[bundle]
     pub shape_bundle: ShapeBundle,
     pub rigid_body: RigidBody,
@@ -70,12 +67,6 @@ impl PlayerBundle {
         self.shape_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
         self
     }
-
-    pub fn with_id(mut self, id: u32) -> Self {
-        self.player.handle = id as usize;
-        self.rollback = bevy_ggrs::Rollback::new(id);
-        self
-    }
 }
 
 impl Default for PlayerBundle {
@@ -86,8 +77,9 @@ impl Default for PlayerBundle {
             ..shapes::RegularPolygon::default()
         };
         Self {
-            player: Player { handle: 0, color: None },
-            rollback: bevy_ggrs::Rollback::new(0),
+            player: Player {
+                color: None,
+            },
             shape_bundle: GeometryBuilder::build_as(
                 &shape,
                 DrawMode::Outlined {

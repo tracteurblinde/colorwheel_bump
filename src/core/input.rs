@@ -1,9 +1,4 @@
 use bevy::prelude::*;
-#[allow(unused_imports)]
-use ggrs::InputStatus;
-
-#[allow(dead_code)]
-pub const INPUT_SIZE: usize = std::mem::size_of::<u8>();
 
 const INPUT_UP: u8 = 1 << 0;
 const INPUT_DOWN: u8 = 1 << 1;
@@ -31,10 +26,6 @@ pub fn input(keys: Res<Input<KeyCode>>) -> u8 {
     }
 
     input
-}
-
-pub fn input_mp(_: In<ggrs::PlayerHandle>, keys: Res<Input<KeyCode>>) -> u8 {
-    input(keys)
 }
 
 pub fn direction(input: u8) -> Vec2 {

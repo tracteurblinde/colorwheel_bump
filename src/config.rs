@@ -1,6 +1,4 @@
 use bevy::prelude::Color;
-// pub const MAP_SIZE: u32 = 42;
-// pub const GRID_WIDTH: f32 = 0.05;
 
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
@@ -62,7 +60,6 @@ pub enum MenuState {
 #[derive(Debug, Clone, Hash)]
 pub enum GameState {
     Gym,
-    Coop,
     Any,
 }
 
@@ -74,7 +71,6 @@ impl PartialEq for GameState {
             (GameState::Any, _) => true,
             (_, GameState::Any) => true,
             (GameState::Gym, GameState::Gym) => true,
-            (GameState::Coop, GameState::Coop) => true,
             _ => false,
         }
     }
@@ -85,7 +81,6 @@ impl Eq for GameState {}
 pub enum AppState {
     Menu(MenuState),
     Game(GameState),
-    GameGym,
 }
 
 pub const BUTTON_COLOR: Color = Color::rgb(0.27, 0.27, 0.27);
