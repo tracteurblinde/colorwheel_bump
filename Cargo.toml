@@ -32,11 +32,6 @@ winit = "0.26"
 anyhow = "1.0"
 vergen = { version = "7.4", default-features = false, features = ["build", "git", "rustc"] }
 
-[patch.crates-io]
-# bevy_ggrs = {git = "https://github.com/gschup/bevy_ggrs" }
-# ggrs = { git = "https://github.com/gschup/ggrs" }
-matchbox_socket = { git = "https://github.com/johanhelsing/matchbox", branch = "main" }
-
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
