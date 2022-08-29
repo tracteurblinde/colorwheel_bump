@@ -1067,6 +1067,7 @@ dependencies = [
  "bevy",
  "bevy_prototype_lyon",
  "bevy_rapier2d",
+ "bevy_text",
  "image",
  "num",
  "num-derive",
@@ -4401,8 +4402,3 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[patch.unused]]
-name = "matchbox_socket"
-version = "0.3.0"
-source = "git+https://github.com/johanhelsing/matchbox?branch=main#a0cc662e9add7e246ee57fbdd1780f2cee9b6d2b"

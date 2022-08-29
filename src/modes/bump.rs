@@ -10,6 +10,7 @@ use crate::{
 use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_prototype_lyon::prelude::*;
 use bevy_rapier2d::prelude::*;
+use rand::seq::IteratorRandom;
 use std::f32::consts::SQRT_2;
 use strum::IntoEnumIterator;
 
@@ -44,48 +45,52 @@ const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_siz
 struct VerticalLine;
 
 #[derive(Component)]
-struct ColorWheelWedge {
-    crystal_color: CrystalColor,
-    is_target: bool,
-}
-
-#[derive(Component)]
-struct ColorWheelIndicator {}
-
-#[derive(Component)]
-struct ColorWheel {}
+struct ColorWheelWedge(CrystalColor);
 
 #[derive(Clone, Debug)]
-#[allow(dead_code)]
-struct CurrentColor {
-    crystal_color: Option<CrystalColor>,
-}
+struct TargetColor(CrystalColor);
+
+#[derive(Component)]
+struct ColorWheelIndicator;
+
+#[derive(Component)]
+struct ColorWheel;
+
+#[derive(Component)]
+struct ScoreText;
+
+#[derive(Clone, Debug)]
+struct CurrentColor(Option<CrystalColor>);
+
+#[derive(Clone, Debug)]
+struct Score(u32);
 
 pub struct BumpPlugin;
 
 impl Plugin for BumpPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CurrentColor {
-            crystal_color: None,
-        })
-        .add_system_set(
-            SystemSet::on_enter(AppState::Game(GameState::Bump))
-                .with_system(startup)
-                .with_system(startup_colorwheel),
-        )
-        //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
-        .add_system_set(
-            SystemSet::on_update(AppState::Game(GameState::Bump))
-                .with_system(move_player)
-                .with_system(camera_follow)
-                .with_system(background_treadmill)
-                .with_system(crystal_treadmill)
-                .with_system(crystal_collision)
-                .with_system(colorizer)
-                .with_system(colorwheel_follow)
-                .with_system(colorwheel_indicator_update)
-                .with_system(colorwheel_wedge_update),
-        );
+        app.insert_resource(Score(0))
+            .insert_resource(CurrentColor(None))
+            .insert_resource(TargetColor(CrystalColor::random_primary()))
+            .add_system_set(
+                SystemSet::on_enter(AppState::Game(GameState::Bump))
+                    .with_system(startup)
+                    .with_system(startup_colorwheel),
+            )
+            //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
+            .add_system_set(
+                SystemSet::on_update(AppState::Game(GameState::Bump))
+                    .with_system(move_player)
+                    .with_system(camera_follow)
+                    .with_system(background_treadmill)
+                    .with_system(crystal_treadmill)
+                    .with_system(crystal_collision)
+                    .with_system(colorizer)
+                    .with_system(colorwheel_follow)
+                    .with_system(colorwheel_indicator_update)
+                    .with_system(colorwheel_wedge_update)
+                    .with_system(update_score),
+            );
     }
 }
 
@@ -167,7 +172,6 @@ fn move_player(
     let move_speed = 0.005;
     let mut move_delta = input::direction(input::input(keys));
     move_delta = move_delta.normalize_or_zero() * move_speed;
-    //move_delta.x = 0.0002; // Ever forward, never learning
 
     for (mut transform, mut velocity, mut external_impulse, _) in &mut player_query {
         external_impulse.impulse = move_delta;
@@ -179,8 +183,6 @@ fn move_player(
             Vec2::new(-max_speed, -max_speed),
             Vec2::new(max_speed, max_speed),
         );
-
-        //velocity.linvel = move_delta;
 
         let cur_pos = transform.translation.xy();
         // If the player is outside the map, move them back to 0,0, clear impulse/velocities
@@ -286,7 +288,7 @@ fn crystal_collision(
                     crystal.collected = true;
 
                     // Update the current color
-                    current_color.crystal_color = player.color;
+                    *current_color = CurrentColor(player.color);
                 }
             }
         }
@@ -318,12 +320,11 @@ fn colorizer(
     }
 }
 
-fn startup_colorwheel(mut commands: Commands) {
+fn startup_colorwheel(mut commands: Commands, asset_server: Res<AssetServer>) {
     // Use the shape plugin to draw a color wheel, coloring each of the wheel segments
     //  by iterating through the CrystalColor enum.
     let radius = MAP_CONFIG.colorwheel_radius;
     let height = MAP_CONFIG.colorwheel_height;
-    let target_color = CrystalColor::Purple;
     let current_color = CrystalColor::Orange;
 
     commands
@@ -350,6 +351,29 @@ fn startup_colorwheel(mut commands: Commands) {
                     std::f32::consts::PI / CrystalColor::iter().count() as f32,
                 )),
             ));
+
+            let font = asset_server.load("fonts/Hind-Regular.otf");
+            let text_style = TextStyle {
+                font,
+                font_size: 72.0,
+                color: Color::WHITE,
+            };
+
+            let box_position = Vec3::new(0., 0.05, 5.);
+            let score_scale = Vec3::splat(1. / 42.);
+            parent
+                .spawn_bundle(Text2dBundle {
+                    text: Text::from_section("00", text_style).with_alignment(TextAlignment {
+                        vertical: VerticalAlign::Center,
+                        horizontal: HorizontalAlign::Center,
+                    }),
+                    // We align text to the top-left, so this transform is the top-left corner of our text. The
+                    // box is centered at box_position, so it is necessary to move by half of the box size to
+                    // keep the text in the box.
+                    transform: Transform::from_translation(box_position).with_scale(score_scale),
+                    ..default()
+                })
+                .insert(ScoreText);
 
             for (i, color) in CrystalColor::iter().enumerate() {
                 let angle1 =
@@ -378,10 +402,7 @@ fn startup_colorwheel(mut commands: Commands) {
                         },
                         Transform::from_xyz(0., 0., 1.),
                     ))
-                    .insert(ColorWheelWedge {
-                        crystal_color: color,
-                        is_target: color == target_color,
-                    });
+                    .insert(ColorWheelWedge(color));
             }
 
             // Draw the current color indicator
@@ -423,31 +444,33 @@ fn colorwheel_follow(
 fn colorwheel_wedge_update(
     mut colorwheel_wedges: Query<(&ColorWheelWedge, &mut Transform, &mut DrawMode)>,
     current_color: Res<CurrentColor>,
+    target_color: Res<TargetColor>,
 ) {
-    let current_color = current_color.crystal_color;
     for (wedge, mut transform, mut draw_mode) in colorwheel_wedges.iter_mut() {
+        let is_target = wedge.0 == (*target_color).0;
+        let is_current = Some(wedge.0) == (*current_color).0;
         let mut alpha = 0.1;
-        if wedge.crystal_color.is_primary() {
+        if wedge.0.is_primary() {
             alpha = 0.4;
         }
-        if wedge.is_target {
+
+        if is_target {
             alpha = 1.;
         }
-        if let Some(color) = current_color {
-            if wedge.crystal_color == color {
-                alpha = 0.7;
-            }
+
+        if is_current {
+            alpha = 0.8;
         }
 
-        let mut fill_color = wedge.crystal_color.to_color();
+        let mut fill_color = wedge.0.to_color();
         fill_color.set_a(alpha);
 
-        let border_color = match wedge.is_target {
+        let border_color = match is_target {
             true => Color::WHITE,
-            false => Color::rgb(0.1, 0.1, 0.1),
+            false => wedge.0.to_color() * 0.5,
         };
 
-        transform.translation = match wedge.is_target {
+        transform.translation = match is_target {
             true => Vec3::new(0., 0., 2.),
             false => Vec3::new(0., 0., 1.),
         };
@@ -468,16 +491,12 @@ fn colorwheel_indicator_update(
     )>,
     current_color: Res<CurrentColor>,
 ) {
-    let current_color = current_color.crystal_color;
-
-    if let Some(current_color) = current_color {
+    if let CurrentColor(Some(current_color)) = *current_color {
         let angle = (current_color as usize as f32 + 0.5) * 2. * std::f32::consts::PI
             / CrystalColor::iter().count() as f32;
         let x = angle.cos() * 2. * 0.75;
         let y = angle.sin() * 2. * 0.75;
-        for (mut visibility, mut transform, mut draw_mode, _) in
-            colorwheel_indicator.iter_mut()
-        {
+        for (mut visibility, mut transform, mut draw_mode, _) in colorwheel_indicator.iter_mut() {
             transform.translation = Vec3::new(x, y, 3.);
             *draw_mode = DrawMode::Outlined {
                 fill_mode: bevy_prototype_lyon::prelude::FillMode::color(current_color.to_color()),
@@ -489,5 +508,27 @@ fn colorwheel_indicator_update(
         for (mut visibility, _, _, _) in colorwheel_indicator.iter_mut() {
             visibility.is_visible = false;
         }
+    }
+}
+
+fn update_score(
+    mut score_text: Query<(&mut Text, &ScoreText)>,
+    mut score: ResMut<Score>,
+    mut target_color: ResMut<TargetColor>,
+    current_color: Res<CurrentColor>,
+) {
+    if let CurrentColor(Some(current_color)) = *current_color {
+        if current_color == target_color.0 {
+            *score = Score(score.0 + 1);
+            let new_color = CrystalColor::iter()
+                .filter(|color| *color != target_color.0)
+                .choose(&mut rand::thread_rng())
+                .unwrap();
+            *target_color = TargetColor(new_color);
+        }
+    }
+
+    for (mut text, _) in score_text.iter_mut() {
+        text.sections[0].value = format!("{:02}", score.0);
     }
 }
