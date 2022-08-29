@@ -126,7 +126,7 @@ impl CrystalColor {
             old_color
         };
 
-        CrystalColor::from_i8(new_color % num_colors).unwrap()
+        CrystalColor::from_i8((new_color + num_colors) % num_colors).unwrap()
     }
 }
 
