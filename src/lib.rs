@@ -1,13 +1,11 @@
 use bevy::prelude::*;
 use crate::config::*;
 use crate::core::CorePlugin;
-use crate::menu::MenuPlugin;
-use crate::modes::ModesPlugin;
+use crate::bump::BumpPlugin;
 
 pub mod config;
 mod core;
-mod menu;
-mod modes;
+mod bump;
 
 pub fn app() -> App {
     let game_config = GameConfig::default();
@@ -23,9 +21,7 @@ pub fn app() -> App {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(CorePlugin)
-        .add_plugin(MenuPlugin)
-        .add_plugin(ModesPlugin)
-        .add_state(AppState::Game(GameState::Bump));
+        .add_plugin(BumpPlugin);
 
     app
 }

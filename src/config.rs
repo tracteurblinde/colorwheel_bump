@@ -51,40 +51,6 @@ impl GameConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MenuState {
-    Main,
-    Credits,
-}
-
-#[derive(Debug, Clone, Hash)]
-pub enum GameState {
-    Gym,
-    Bump,
-    Any,
-}
-
-impl PartialEq for GameState {
-    fn eq(&self, other: &Self) -> bool {
-        // Return true if either side is Any.
-        // Otherwise, do a normal comparison.
-        match (self, other) {
-            (GameState::Any, _) => true,
-            (_, GameState::Any) => true,
-            (GameState::Gym, GameState::Gym) => true,
-            (GameState::Bump, GameState::Bump) => true,
-            _ => false,
-        }
-    }
-}
-impl Eq for GameState {}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum AppState {
-    Menu(MenuState),
-    Game(GameState),
-}
-
 pub const BUTTON_COLOR: Color = Color::rgb(0.27, 0.27, 0.27);
 pub const BUTTON_HOVER_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
 pub const BUTTON_PRESSED_COLOR: Color = Color::rgb(0.3, 0.3, 0.3);

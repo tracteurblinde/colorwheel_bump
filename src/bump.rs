@@ -1,10 +1,7 @@
-use crate::{
-    config::{AppState, GameState},
-    core::{
-        crystal::{Crystal, CrystalBundle, CrystalColor},
-        platform::PlatformBundle,
-        player::{Player, PlayerBundle},
-    },
+use crate::core::{
+    crystal::{Crystal, CrystalBundle, CrystalColor},
+    platform::PlatformBundle,
+    player::{Player, PlayerBundle},
 };
 use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_prototype_lyon::prelude::*;
@@ -78,29 +75,22 @@ impl Plugin for BumpPlugin {
             .insert_resource(CurrentColor(None))
             .insert_resource(TargetColor(CrystalColor::random_primary()))
             .insert_resource(MostRecentMovement(None))
-            .add_system_set(
-                SystemSet::on_enter(AppState::Game(GameState::Bump))
-                    .with_system(startup)
-                    .with_system(startup_colorwheel),
-            )
-            //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
-            .add_system_set(
-                SystemSet::on_update(AppState::Game(GameState::Bump))
-                    .with_system(input_keyboard)
-                    .with_system(input_mouse)
-                    .with_system(input_touch)
-                    .with_system(move_player.after(input_keyboard).after(input_touch))
-                    .with_system(camera_follow)
-                    .with_system(background_treadmill)
-                    .with_system(crystal_treadmill)
-                    .with_system(crystal_collision)
-                    .with_system(colorizer)
-                    .with_system(colorwheel_follow)
-                    .with_system(colorwheel_indicator_update)
-                    .with_system(colorwheel_wedge_update)
-                    .with_system(update_score)
-                    .with_system(update_help),
-            );
+            .add_startup_system(startup)
+            .add_startup_system(startup_colorwheel)
+            .add_system(input_keyboard)
+            .add_system(input_mouse)
+            .add_system(input_touch)
+            .add_system(move_player.after(input_keyboard).after(input_touch))
+            .add_system(camera_follow)
+            .add_system(background_treadmill)
+            .add_system(crystal_treadmill)
+            .add_system(crystal_collision)
+            .add_system(colorizer)
+            .add_system(colorwheel_follow)
+            .add_system(colorwheel_indicator_update)
+            .add_system(colorwheel_wedge_update)
+            .add_system(update_score)
+            .add_system(update_help);
     }
 }
 
@@ -518,8 +508,8 @@ fn colorwheel_wedge_update(
     target_color: Res<TargetColor>,
 ) {
     for (wedge, mut transform, mut draw_mode) in colorwheel_wedges.iter_mut() {
-        let is_target = wedge.0 == (*target_color).0;
-        let is_current = Some(wedge.0) == (*current_color).0;
+        let is_target = wedge.0 == target_color.0;
+        let is_current = Some(wedge.0) == current_color.0;
         let mut alpha = 0.1;
         if wedge.0.is_primary() {
             alpha = 0.4;
