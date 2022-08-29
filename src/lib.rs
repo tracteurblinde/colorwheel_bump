@@ -25,7 +25,7 @@ pub fn app() -> App {
         .add_plugin(CorePlugin)
         .add_plugin(MenuPlugin)
         .add_plugin(ModesPlugin)
-        .add_state(AppState::Game(GameState::Gym));
+        .add_state(AppState::Game(GameState::Bump));
 
     app
 }

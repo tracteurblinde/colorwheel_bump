@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
-mod gym;
+mod bump;
 
 pub struct ModesPlugin;
 
 impl Plugin for ModesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(gym::GymPlugin);
+        app.add_plugin(bump::BumpPlugin);
     }
 }

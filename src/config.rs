@@ -60,6 +60,7 @@ pub enum MenuState {
 #[derive(Debug, Clone, Hash)]
 pub enum GameState {
     Gym,
+    Bump,
     Any,
 }
 
@@ -71,6 +72,7 @@ impl PartialEq for GameState {
             (GameState::Any, _) => true,
             (_, GameState::Any) => true,
             (GameState::Gym, GameState::Gym) => true,
+            (GameState::Bump, GameState::Bump) => true,
             _ => false,
         }
     }

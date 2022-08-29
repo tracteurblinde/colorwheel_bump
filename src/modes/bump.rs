@@ -38,16 +38,16 @@ const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_siz
 #[derive(Component)]
 struct VerticalLine;
 
-pub struct GymPlugin;
+pub struct BumpPlugin;
 
-impl Plugin for GymPlugin {
+impl Plugin for BumpPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_enter(AppState::Game(GameState::Gym)).with_system(startup),
+            SystemSet::on_enter(AppState::Game(GameState::Bump)).with_system(startup),
         )
-        //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Gym)).with_system(shutdown))
+        //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
         .add_system_set(
-            SystemSet::on_update(AppState::Game(GameState::Gym))
+            SystemSet::on_update(AppState::Game(GameState::Bump))
                 .with_system(move_player)
                 .with_system(camera_follow)
                 .with_system(background_treadmill)
@@ -130,7 +130,7 @@ fn move_player(
     keys: Res<Input<KeyCode>>,
     mut player_query: Query<(&mut Transform, &mut Velocity, &mut ExternalImpulse, &Player)>,
 ) {
-    // TODO: Move the magic constants to a gym game config
+    // TODO: Move the magic constants to a Bump game config
     let move_speed = 0.005;
     let mut move_delta = input::direction(input::input(keys));
     move_delta = move_delta.normalize_or_zero() * move_speed;
