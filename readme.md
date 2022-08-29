@@ -1,8 +1,6 @@
 # Color Wheel Bump
 *An entry for [Bevy Jam 2](https://itch.io/jam/bevy-jam-2).*
 
-** STILL A WORK IN PROGRESS **
-
 Add colors to yourself to navigate your way around the color wheel toward the target color.
 
 ## Usage
