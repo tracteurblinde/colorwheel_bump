@@ -58,7 +58,7 @@ impl CrystalColor {
         }
     }
 
-    pub fn to_color(&self) -> Color {
+    pub fn to_color(self) -> Color {
         match self {
             CrystalColor::Orange => Color::rgb_u8(255, 126, 0),
             CrystalColor::YellowOrange => Color::rgb_u8(255, 218, 48),
@@ -75,7 +75,7 @@ impl CrystalColor {
         }
     }
 
-    pub fn to_draw_mode(&self) -> DrawMode {
+    pub fn to_draw_mode(self) -> DrawMode {
         DrawMode::Outlined {
             fill_mode: bevy_prototype_lyon::prelude::FillMode::color(self.to_color()),
             outline_mode: StrokeMode::new(Color::WHITE, 0.05),
@@ -84,18 +84,18 @@ impl CrystalColor {
 
     #[allow(dead_code)]
     pub fn is_primary(&self) -> bool {
-        match self {
-            CrystalColor::Red | CrystalColor::Blue | CrystalColor::Yellow => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            CrystalColor::Red | CrystalColor::Blue | CrystalColor::Yellow
+        )
     }
 
     #[allow(dead_code)]
     pub fn is_secondary(&self) -> bool {
-        match self {
-            CrystalColor::Purple | CrystalColor::Green | CrystalColor::Orange => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            CrystalColor::Orange | CrystalColor::Green | CrystalColor::Purple
+        )
     }
 
     #[allow(dead_code)]
@@ -110,6 +110,7 @@ impl CrystalColor {
         let half_num_colors = (CrystalColor::iter().count() / 2) as i8;
 
         // TODO: I'm very confident there's a way to do this without branching
+        #[allow(clippy::comparison_chain)]
         let new_color = if new_color > old_color {
             if new_color - old_color <= half_num_colors {
                 old_color + 1
