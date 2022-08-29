@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 
 env:
-  RELEASE_NAME: prismpals
+  RELEASE_NAME: colorwheel_bump
   PUBLIC_URL: /
 
 jobs:

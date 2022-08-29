@@ -1,9 +1,9 @@
-# PrismPals
+# Color Wheel Bump
 *An entry for [Bevy Jam 2](https://itch.io/jam/bevy-jam-2).*
 
 **THIS IS A WORK IN PROGRESS AND CURRENTLY VERY INCOMPLETE**
 
-A light-based puzzle platformer. Collect all the gems and press buttons using corresponding colored lasers and reach the exit. Supports both Solo and 2-player network coop.
+Add colors to yourself to navigate your way around the color wheel toward the target color.
 
 ## Usage
 Native works out of the box with `cargo run`
@@ -13,9 +13,6 @@ Wasm is available via [Trunk](https://trunkrs.dev/)
 cargo install --locked trunk
 trunk serve
 ```
-
-## Todo
-
 
 ## Credits
 Based on the [bevy-shell-template](https://github.com/kurbos/bevy-shell-template) and using [Extreme Bevy](https://johanhelsing.studio/posts/extreme-bevy).

@@ -23,7 +23,7 @@ fn set_window_icon(windows: NonSend<WinitWindows>) {
 }
 
 fn main() {
-    let mut app = prismpals::app();
+    let mut app = colorwheel_bump::app();
 
     info!("Starting launcher: Native");
     app.add_startup_system(set_window_icon);

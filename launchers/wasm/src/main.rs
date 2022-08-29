@@ -30,7 +30,7 @@ fn set_global_css() {
 
 #[styled_component(Root)]
 fn view() -> Html {
-    set_window_title(prismpals::config::GameConfig::default().game_title);
+    set_window_title(colorwheel_bump::config::GameConfig::default().game_title);
     set_global_css();
 
     let css = css!(
@@ -53,7 +53,7 @@ fn main() {
     // Mount the DOM
     yew::start_app::<Root>();
     // Start the Bevy App
-    let mut app = prismpals::app();
+    let mut app = colorwheel_bump::app();
     info!("Starting launcher: WASM");
     app.run();
 }

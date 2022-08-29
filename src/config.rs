@@ -16,8 +16,8 @@ pub struct GameConfig {
 impl Default for GameConfig {
     fn default() -> Self {
         GameConfig::new(
-            "PrismPals",
-            "prismpals",
+            "ColorWheel Bump",
+            "colorwheel_bump",
             "ws://localhost:3536",
             "wss://matchbox.tracteur.dev:2083",
         )

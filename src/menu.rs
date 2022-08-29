@@ -47,7 +47,7 @@ fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..default()
                     },
                     text: Text::from_section(
-                        "PrismPals!",
+                        "ColorWheel Bump!",
                         TextStyle {
                             font: asset_server.load("fonts/Hind-Regular.otf"),
                             font_size: 96.,
