@@ -29,12 +29,13 @@ pub struct PlayerBundle {
     pub gravity: GravityScale,
     pub collider_mass_properties: ColliderMassProperties,
     pub locked_axes: LockedAxes,
+    pub active_events: ActiveEvents,
 }
 
 impl PlayerBundle {
     pub fn from_shape(sides: usize, radius: f32) -> Self {
         let shape = shapes::RegularPolygon {
-            sides: sides,
+            sides,
             feature: shapes::RegularPolygonFeature::Radius(radius),
             ..shapes::RegularPolygon::default()
         };
@@ -103,6 +104,7 @@ impl Default for PlayerBundle {
             gravity: GravityScale::default(),
             collider_mass_properties: ColliderMassProperties::Density(1.0),
             locked_axes: LockedAxes::ROTATION_LOCKED,
+            active_events: ActiveEvents::COLLISION_EVENTS,
         }
     }
 }

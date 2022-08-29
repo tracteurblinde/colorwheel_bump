@@ -109,18 +109,6 @@ fn startup(mut commands: Commands) {
             .with_position(0., hsize.y)
             .with_size(size.x + 1., 1.),
     );
-    commands.spawn_bundle(
-        PlatformBundle::default()
-            .with_color(border_color)
-            .with_position(-hsize.x, 0.)
-            .with_size(1., size.y + 1.),
-    );
-    commands.spawn_bundle(
-        PlatformBundle::default()
-            .with_color(border_color)
-            .with_position(hsize.x, 0.)
-            .with_size(1., size.y + 1.),
-    );
 
     // Spawn crystals to collect
     for _ in 0..32 {
@@ -223,28 +211,35 @@ fn crystal_treadmill(
 /// is changed toward the crystal's color (or to it if the player is empty).
 /// The Crystal is respawned at the right edge of the map with a random color.
 fn crystal_collision(
-    mut player_query: Query<(&mut Player, &Transform)>,
-    mut crystal_query: Query<(&mut Crystal, &Transform)>,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut players: Query<&mut Player>,
+    mut crystals: Query<&mut Crystal>,
 ) {
-    for (mut player, player_transform) in &mut player_query {
-        let player_pos = player_transform.translation.xy();
-
-        for (mut crystal, crystal_transform) in &mut crystal_query {
-            let crystal_pos = crystal_transform.translation.xy();
-
-            if (crystal_pos - player_pos).length() < 2.6 {
-                // Player and crystal are touching, change the player's color
-                match player.color {
-                    Some(color) => {
-                        player.color = Some(color.combine(&crystal.crystal_color));
+    for event in collision_events.iter() {
+        if let CollisionEvent::Started(entity_a, entity_b, _) = &event {
+            // Determine which entity is the player and which is the crystal
+            let (player_entity, crystal_entity) = if players.get(*entity_a).is_ok() {
+                (*entity_a, *entity_b)
+            } else if players.get(*entity_b).is_ok() {
+                (*entity_b, *entity_a)
+            } else {
+                continue;
+            };
+            if let Ok(mut player) = players.get_mut(player_entity) {
+                if let Ok(mut crystal) = crystals.get_mut(crystal_entity) {
+                    // Player and crystal are touching, change the player's color
+                    match player.color {
+                        Some(color) => {
+                            player.color = Some(color.combine(&crystal.crystal_color));
+                        }
+                        None => {
+                            player.color = Some(crystal.crystal_color);
+                        }
                     }
-                    None => {
-                        player.color = Some(crystal.crystal_color);
-                    }
+
+                    // Don't actually despawn, just mark as collected and let the treadmill handle it
+                    crystal.collected = true;
                 }
-
-                // Don't actually despawn, just mark as collected and let the treadmill handle it
-                crystal.collected = true;
             }
         }
     }
