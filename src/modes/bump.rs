@@ -8,9 +8,10 @@ use crate::{
     },
 };
 use bevy::{math::Vec3Swizzles, prelude::*};
-use bevy_prototype_lyon::prelude::{DrawMode, StrokeMode};
+use bevy_prototype_lyon::prelude::*;
 use bevy_rapier2d::prelude::*;
 use std::f32::consts::SQRT_2;
+use strum::IntoEnumIterator;
 
 pub struct MapConfig {
     pub map_size: Vec2,
@@ -21,6 +22,8 @@ pub struct MapConfig {
     pub player_default_color: Color,
     pub player_outline_color: Color,
     pub background_speed: f32,
+    pub colorwheel_height: f32,
+    pub colorwheel_radius: f32,
 }
 
 const MAP_CONFIG: MapConfig = MapConfig {
@@ -32,18 +35,43 @@ const MAP_CONFIG: MapConfig = MapConfig {
     player_default_color: Color::WHITE,
     player_outline_color: Color::WHITE,
     background_speed: 3.,
+    colorwheel_height: 8.,
+    colorwheel_radius: 2.,
 };
 const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_size.y / 2.);
 
 #[derive(Component)]
 struct VerticalLine;
 
+#[derive(Component)]
+struct ColorWheelWedge {
+    crystal_color: CrystalColor,
+    is_target: bool,
+}
+
+#[derive(Component)]
+struct ColorWheelIndicator {}
+
+#[derive(Component)]
+struct ColorWheel {}
+
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
+struct CurrentColor {
+    crystal_color: Option<CrystalColor>,
+}
+
 pub struct BumpPlugin;
 
 impl Plugin for BumpPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(AppState::Game(GameState::Bump)).with_system(startup),
+        app.insert_resource(CurrentColor {
+            crystal_color: None,
+        })
+        .add_system_set(
+            SystemSet::on_enter(AppState::Game(GameState::Bump))
+                .with_system(startup)
+                .with_system(startup_colorwheel),
         )
         //.add_system_set(SystemSet::on_exit(AppState::Game(GameState::Bump)).with_system(shutdown))
         .add_system_set(
@@ -53,7 +81,10 @@ impl Plugin for BumpPlugin {
                 .with_system(background_treadmill)
                 .with_system(crystal_treadmill)
                 .with_system(crystal_collision)
-                .with_system(colorizer),
+                .with_system(colorizer)
+                .with_system(colorwheel_follow)
+                .with_system(colorwheel_indicator_update)
+                .with_system(colorwheel_wedge_update),
         );
     }
 }
@@ -65,7 +96,7 @@ fn startup(mut commands: Commands) {
     // Horizontal lines
     for i in 0..=MAP_CONFIG.map_size.y as i32 {
         commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0., i as f32 - hsize.y, 10.)),
+            transform: Transform::from_xyz(0., i as f32 - hsize.y, 10.),
             sprite: Sprite {
                 color: Color::rgb(0.5, 0.5, 0.5),
                 custom_size: Some(Vec2::new(size.x, MAP_CONFIG.grid_width)),
@@ -77,15 +108,17 @@ fn startup(mut commands: Commands) {
 
     // Vertical lines
     for i in 0..=MAP_CONFIG.map_size.x as i32 {
-        commands.spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(i as f32 - hsize.x, 0., 10.)),
-            sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 0.5),
-                custom_size: Some(Vec2::new(MAP_CONFIG.grid_width, size.y)),
+        commands
+            .spawn_bundle(SpriteBundle {
+                transform: Transform::from_xyz(i as f32 - hsize.x, 0., 10.),
+                sprite: Sprite {
+                    color: Color::rgb(0.5, 0.5, 0.5),
+                    custom_size: Some(Vec2::new(MAP_CONFIG.grid_width, size.y)),
+                    ..default()
+                },
                 ..default()
-            },
-            ..default()
-        }).insert(VerticalLine{});
+            })
+            .insert(VerticalLine {});
     }
 
     // Create a player
@@ -176,10 +209,7 @@ fn camera_follow(
     }
 }
 
-fn background_treadmill(
-    mut background_query: Query<(&mut Transform, &VerticalLine)>,
-)
-{
+fn background_treadmill(mut background_query: Query<(&mut Transform, &VerticalLine)>) {
     for (mut transform, _) in &mut background_query {
         transform.translation.x -= 0.01;
         if transform.translation.x < -HMAP_SIZE.x {
@@ -228,6 +258,7 @@ fn crystal_collision(
     mut collision_events: EventReader<CollisionEvent>,
     mut players: Query<&mut Player>,
     mut crystals: Query<&mut Crystal>,
+    mut current_color: ResMut<CurrentColor>,
 ) {
     for event in collision_events.iter() {
         if let CollisionEvent::Started(entity_a, entity_b, _) = &event {
@@ -253,6 +284,9 @@ fn crystal_collision(
 
                     // Don't actually despawn, just mark as collected and let the treadmill handle it
                     crystal.collected = true;
+
+                    // Update the current color
+                    current_color.crystal_color = player.color;
                 }
             }
         }
@@ -281,5 +315,179 @@ fn colorizer(
 
     for (mut draw_mode, crystal, _) in &mut crystal_query {
         *draw_mode = crystal.crystal_color.to_draw_mode();
+    }
+}
+
+fn startup_colorwheel(mut commands: Commands) {
+    // Use the shape plugin to draw a color wheel, coloring each of the wheel segments
+    //  by iterating through the CrystalColor enum.
+    let radius = MAP_CONFIG.colorwheel_radius;
+    let height = MAP_CONFIG.colorwheel_height;
+    let target_color = CrystalColor::Purple;
+    let current_color = CrystalColor::Orange;
+
+    commands
+        .spawn()
+        .insert(ColorWheel {})
+        .insert(Transform::from_xyz(0., height, 90.))
+        .insert(GlobalTransform::default())
+        .insert(Visibility::default())
+        .insert(ComputedVisibility::default())
+        .with_children(|parent| {
+            parent.spawn_bundle(GeometryBuilder::build_as(
+                &shapes::RegularPolygon {
+                    sides: CrystalColor::iter().count(),
+                    feature: shapes::RegularPolygonFeature::Radius(radius),
+                    ..default()
+                },
+                DrawMode::Outlined {
+                    fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::rgb(
+                        0.1, 0.1, 0.1,
+                    )),
+                    outline_mode: StrokeMode::new(Color::WHITE, 0.05),
+                },
+                Transform::from_xyz(0., 0., 0.).with_rotation(Quat::from_rotation_z(
+                    std::f32::consts::PI / CrystalColor::iter().count() as f32,
+                )),
+            ));
+
+            for (i, color) in CrystalColor::iter().enumerate() {
+                let angle1 =
+                    i as f32 * 2. * std::f32::consts::PI / CrystalColor::iter().count() as f32;
+
+                let angle2 = (i + 1) as f32 * 2. * std::f32::consts::PI
+                    / CrystalColor::iter().count() as f32;
+                let outside1 = Vec2::new(angle1.cos(), angle1.sin()) * radius;
+                let outside2 = Vec2::new(angle2.cos(), angle2.sin()) * radius;
+                let inside1 = outside1 * 0.5;
+                let inside2 = outside2 * 0.5;
+
+                let shape = shapes::Polygon {
+                    points: vec![outside1, outside2, inside2, inside1],
+                    closed: true,
+                };
+
+                parent
+                    .spawn_bundle(GeometryBuilder::build_as(
+                        &shape,
+                        DrawMode::Outlined {
+                            fill_mode: bevy_prototype_lyon::prelude::FillMode::color(
+                                color.to_color(),
+                            ),
+                            outline_mode: StrokeMode::new(Color::WHITE, 0.05),
+                        },
+                        Transform::from_xyz(0., 0., 1.),
+                    ))
+                    .insert(ColorWheelWedge {
+                        crystal_color: color,
+                        is_target: color == target_color,
+                    });
+            }
+
+            // Draw the current color indicator
+            let angle = (current_color as usize as f32 + 0.5) * 2. * std::f32::consts::PI
+                / CrystalColor::iter().count() as f32;
+            let x = angle.cos() * radius * 0.75;
+            let y = angle.sin() * radius * 0.75;
+            parent
+                .spawn_bundle(GeometryBuilder::build_as(
+                    &shapes::RegularPolygon {
+                        sides: 4,
+                        feature: shapes::RegularPolygonFeature::Radius(0.2),
+                        ..default()
+                    },
+                    DrawMode::Outlined {
+                        fill_mode: bevy_prototype_lyon::prelude::FillMode::color(
+                            current_color.to_color(),
+                        ),
+                        outline_mode: StrokeMode::new(Color::WHITE, 0.05),
+                    },
+                    Transform::from_xyz(x, y, 3.),
+                ))
+                .insert(ColorWheelIndicator {});
+        });
+}
+
+fn colorwheel_follow(
+    mut colorwheels: Query<(&mut Transform, &ColorWheel, Without<Player>)>,
+    players: Query<(&Transform, &Player, Without<ColorWheel>)>,
+) {
+    for (mut transform, _, _) in colorwheels.iter_mut() {
+        for (player_transform, _, _) in players.iter() {
+            transform.translation =
+                player_transform.translation + Vec3::new(0., MAP_CONFIG.colorwheel_height, 0.);
+        }
+    }
+}
+
+fn colorwheel_wedge_update(
+    mut colorwheel_wedges: Query<(&ColorWheelWedge, &mut Transform, &mut DrawMode)>,
+    current_color: Res<CurrentColor>,
+) {
+    let current_color = current_color.crystal_color;
+    for (wedge, mut transform, mut draw_mode) in colorwheel_wedges.iter_mut() {
+        let mut alpha = 0.1;
+        if wedge.crystal_color.is_primary() {
+            alpha = 0.4;
+        }
+        if wedge.is_target {
+            alpha = 1.;
+        }
+        if let Some(color) = current_color {
+            if wedge.crystal_color == color {
+                alpha = 0.7;
+            }
+        }
+
+        let mut fill_color = wedge.crystal_color.to_color();
+        fill_color.set_a(alpha);
+
+        let border_color = match wedge.is_target {
+            true => Color::WHITE,
+            false => Color::rgb(0.1, 0.1, 0.1),
+        };
+
+        transform.translation = match wedge.is_target {
+            true => Vec3::new(0., 0., 2.),
+            false => Vec3::new(0., 0., 1.),
+        };
+
+        *draw_mode = DrawMode::Outlined {
+            fill_mode: bevy_prototype_lyon::prelude::FillMode::color(fill_color),
+            outline_mode: StrokeMode::new(border_color, 0.05),
+        };
+    }
+}
+
+fn colorwheel_indicator_update(
+    mut colorwheel_indicator: Query<(
+        &mut Visibility,
+        &mut Transform,
+        &mut DrawMode,
+        &ColorWheelIndicator,
+    )>,
+    current_color: Res<CurrentColor>,
+) {
+    let current_color = current_color.crystal_color;
+
+    if let Some(current_color) = current_color {
+        let angle = (current_color as usize as f32 + 0.5) * 2. * std::f32::consts::PI
+            / CrystalColor::iter().count() as f32;
+        let x = angle.cos() * 2. * 0.75;
+        let y = angle.sin() * 2. * 0.75;
+        for (mut visibility, mut transform, mut draw_mode, _) in
+            colorwheel_indicator.iter_mut()
+        {
+            transform.translation = Vec3::new(x, y, 3.);
+            *draw_mode = DrawMode::Outlined {
+                fill_mode: bevy_prototype_lyon::prelude::FillMode::color(current_color.to_color()),
+                outline_mode: StrokeMode::new(Color::WHITE, 0.05),
+            };
+            visibility.is_visible = true;
+        }
+    } else {
+        for (mut visibility, _, _, _) in colorwheel_indicator.iter_mut() {
+            visibility.is_visible = false;
+        }
     }
 }

@@ -43,7 +43,7 @@ impl PlayerBundle {
                     fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
                     outline_mode: StrokeMode::new(Color::PINK, PLAYER_OUTLINE_WIDTH),
                 },
-                Transform::from_translation(Vec3::new(0., 0., 100.)),
+                Transform::from_xyz(0., 0., 100.),
             ),
             collider: Collider::cuboid(radius / SQRT_2, radius / SQRT_2),
             ..default()
@@ -64,7 +64,7 @@ impl PlayerBundle {
     }
 
     pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.shape_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
+        self.shape_bundle.transform = Transform::from_xyz(x, y, 100.);
         self
     }
 }
@@ -86,7 +86,7 @@ impl Default for PlayerBundle {
                     fill_mode: bevy_prototype_lyon::prelude::FillMode::color(Color::CYAN),
                     outline_mode: StrokeMode::new(Color::PINK, PLAYER_OUTLINE_WIDTH),
                 },
-                Transform::from_translation(Vec3::new(0., 0., 100.)),
+                Transform::from_xyz(0., 0., 100.),
             ),
             rigid_body: RigidBody::Dynamic,
             velocity: Velocity::default(),

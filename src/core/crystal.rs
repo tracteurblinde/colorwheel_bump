@@ -160,7 +160,7 @@ impl CrystalBundle {
     }
 
     pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.shape_bundle.transform = Transform::from_translation(Vec3::new(x, y, 100.));
+        self.shape_bundle.transform = Transform::from_xyz(x, y, 75.);
         self
     }
 }
@@ -181,7 +181,7 @@ impl Default for CrystalBundle {
             shape_bundle: GeometryBuilder::build_as(
                 &shape,
                 color.to_draw_mode(),
-                Transform::from_translation(Vec3::new(0., 0., 100.)),
+                Transform::from_xyz(0., 0., 75.),
             ),
             rigid_body: RigidBody::Dynamic,
             velocity: Velocity::default(),

@@ -20,7 +20,7 @@ impl PlatformBundle {
     }
 
     pub fn with_position(mut self, x: f32, y: f32) -> Self {
-        self.sprite_bundle.transform = Transform::from_translation(Vec3::new(x, y, 50.));
+        self.sprite_bundle.transform = Transform::from_xyz(x, y, 50.);
         self
     }
 
@@ -36,7 +36,7 @@ impl Default for PlatformBundle {
         Self {
             platform: Platform {},
             sprite_bundle: SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+                transform: Transform::from_xyz(0., 0., 0.),
                 sprite: Sprite {
                     color: Color::rgb(0.7, 0.0, 0.7),
                     custom_size: Some(Vec2::new(1., 1.)),
