@@ -1,7 +1,7 @@
 # Color Wheel Bump
 *An entry for [Bevy Jam 2](https://itch.io/jam/bevy-jam-2).*
 
-**THIS IS A WORK IN PROGRESS AND CURRENTLY VERY INCOMPLETE**
+** STILL A WORK IN PROGRESS **
 
 Add colors to yourself to navigate your way around the color wheel toward the target color.
 
@@ -15,10 +15,12 @@ trunk serve
 ```
 
 ## Credits
-Based on the [bevy-shell-template](https://github.com/kurbos/bevy-shell-template) and using [Extreme Bevy](https://johanhelsing.studio/posts/extreme-bevy).
+Based on the [bevy-shell-template](https://github.com/kurbos/bevy-shell-template) and using [Extreme Bevy](https://johanhelsing.studio/posts/extreme-bevy) tutorial to learn the ropes.
+Utilizing the shapes from [bevy_prototype_lyon](https://github.com/Nilirad/bevy_prototype_lyon) and [bevy_rapier](https://github.com/dimforge/bevy_rapier) for physics.
+
 Uses the [Hind](https://github.com/itfoundry/hind) font.
 
-Game and assets by @tracteurblinde.
+Game by @tracteurblinde.
 
 ## License
 All code is dual licensed under the MIT and Apache 2.0 licenses.
