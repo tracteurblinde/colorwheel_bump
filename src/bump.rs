@@ -49,7 +49,7 @@ struct ColorWheelIndicator;
 struct ColorWheel;
 #[derive(Component)]
 struct ScoreText;
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 enum FadeDirection {
     Visible,
     FadingIn,
@@ -630,8 +630,8 @@ fn update_help(
             continue;
         }
 
-        if state == FadeDirection::FadingIn
-            || state == FadeDirection::FadingOut && help_text.fade_direction != state
+        if (state == FadeDirection::FadingIn
+            || state == FadeDirection::FadingOut) && help_text.fade_direction != state
         {
             help_text.fade_start_time = time.seconds_since_startup();
         }
@@ -643,7 +643,7 @@ fn update_help(
 
         let alpha = match help_text.fade_direction {
             FadeDirection::Visible => 1.,
-            FadeDirection::FadingIn => (anim_dt - 6.) / 2.,
+            FadeDirection::FadingIn => anim_dt / 2.,
             FadeDirection::NotVisible => 0.,
             FadeDirection::FadingOut => 1. - (anim_dt / 0.5),
         }
