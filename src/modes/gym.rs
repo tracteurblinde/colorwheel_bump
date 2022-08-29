@@ -20,6 +20,7 @@ pub struct MapConfig {
     pub crystal_angvel: f32,
     pub player_default_color: Color,
     pub player_outline_color: Color,
+    pub background_speed: f32,
 }
 
 const MAP_CONFIG: MapConfig = MapConfig {
@@ -29,9 +30,13 @@ const MAP_CONFIG: MapConfig = MapConfig {
     crystal_linvel: 6.,
     crystal_angvel: 4.,
     player_default_color: Color::WHITE,
-    player_outline_color: Color::rgb(0., 0.5, 0.2),
+    player_outline_color: Color::WHITE,
+    background_speed: 3.,
 };
 const HMAP_SIZE: Vec2 = Vec2::new(MAP_CONFIG.map_size.x / 2., MAP_CONFIG.map_size.y / 2.);
+
+#[derive(Component)]
+struct VerticalLine;
 
 pub struct GymPlugin;
 
@@ -45,6 +50,7 @@ impl Plugin for GymPlugin {
             SystemSet::on_update(AppState::Game(GameState::Gym))
                 .with_system(move_player)
                 .with_system(camera_follow)
+                .with_system(background_treadmill)
                 .with_system(crystal_treadmill)
                 .with_system(crystal_collision)
                 .with_system(colorizer),
@@ -79,7 +85,7 @@ fn startup(mut commands: Commands) {
                 ..default()
             },
             ..default()
-        });
+        }).insert(VerticalLine{});
     }
 
     // Create a player
@@ -170,6 +176,18 @@ fn camera_follow(
         for mut transform in &mut camera_query {
             transform.translation.x = pos.x;
             transform.translation.y = pos.y;
+        }
+    }
+}
+
+fn background_treadmill(
+    mut background_query: Query<(&mut Transform, &VerticalLine)>,
+)
+{
+    for (mut transform, _) in &mut background_query {
+        transform.translation.x -= 0.01;
+        if transform.translation.x < -HMAP_SIZE.x {
+            transform.translation.x += HMAP_SIZE.x * 2.;
         }
     }
 }
